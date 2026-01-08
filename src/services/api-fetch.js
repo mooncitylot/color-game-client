@@ -33,7 +33,8 @@ export async function apiFetch(path, method, body = null, API = DEFAULT_API) {
       const text = await res.text()
       if (text) {
         const errorData = JSON.parse(text)
-        errorMessage = errorData.message || errorMessage
+        // API returns 'description' field in error responses
+        errorMessage = errorData.description || errorData.message || errorMessage
       }
     } catch (e) {
       // Ignore JSON parse errors for error responses

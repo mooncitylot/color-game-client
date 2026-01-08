@@ -24,6 +24,13 @@ class SignupForm extends LitElement {
     try {
       const data = Object.fromEntries(new FormData(e.target).entries())
       data.email = data.email.toLowerCase()
+      data.username = data.username.trim()
+
+      // Validate username doesn't contain spaces
+      if (data.username.includes(' ')) {
+        this.error = 'Username cannot contain spaces.'
+        return
+      }
 
       // Basic password validation
       if (data.password !== data.confirmPassword) {
@@ -32,15 +39,20 @@ class SignupForm extends LitElement {
       }
 
       await signupUser({
-        firstName: data.firstName,
-        lastName: data.lastName,
+        username: data.username,
         email: data.email,
         password: data.password,
       })
 
       this.success = true
     } catch (error) {
-      this.error = 'There was a problem creating your account. Please try again.'
+      console.error('Signup error:', error)
+      // Extract error message from API response
+      if (error.message) {
+        this.error = error.message
+      } else {
+        this.error = 'There was a problem creating your account. Please try again.'
+      }
     }
   }
 
@@ -61,11 +73,16 @@ class SignupForm extends LitElement {
         <p>Join Color Game today!</p>
 
         <form @submit=${this.handleFormSubmit}>
-          <label for="firstName">First Name</label>
-          <input type="text" name="firstName" required />
-
-          <label for="lastName">Last Name</label>
-          <input type="text" name="lastName" required />
+          <label for="username">Username</label>
+          <input 
+            type="text" 
+            name="username" 
+            required 
+            minlength="3" 
+            maxlength="20"
+            pattern="[^\\s]+"
+            title="Username cannot contain spaces"
+          />
 
           <label for="email">Email</label>
           <input type="email" name="email" required />

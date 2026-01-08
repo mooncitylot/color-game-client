@@ -19,6 +19,18 @@ export const routes = {
     componentName: 'dashboard-container',
     isPublic: false,
   },
+  SCANNER: {
+    path: '/scanner',
+    componentPath: 'scanner/scanner-container',
+    componentName: 'scanner-container',
+    isPublic: false,
+  },
+  ADMIN: {
+    path: '/admin',
+    componentPath: 'admin/admin-container',
+    componentName: 'admin-container',
+    isPublic: false,
+  },
 }
 
 // Add pathRegexp to each route
