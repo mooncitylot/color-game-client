@@ -1,4 +1,4 @@
-import { css } from 'lit'
+import { css } from "lit";
 
 const globalStyles = css`
   * {
@@ -10,13 +10,13 @@ const globalStyles = css`
   }
 
   button {
-    padding: 12px 24px;
+    padding: 4px 8px;
     background-color: var(--app-primary-color);
     color: white;
     border: none;
     border-radius: var(--app-border-radius);
     cursor: pointer;
-    font-size: 16px;
+    font-size: 12px;
     font-family: var(--primary-font-family);
     transition: opacity 0.2s;
   }
@@ -70,7 +70,12 @@ const globalStyles = css`
     text-decoration: underline;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     margin: 0;
     color: var(--app-primary-color);
   }
@@ -79,6 +84,6 @@ const globalStyles = css`
     margin: 8px 0;
     line-height: 1.5;
   }
-`
+`;
 
-export default globalStyles
+export default globalStyles;

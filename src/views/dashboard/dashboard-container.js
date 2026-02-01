@@ -1,16 +1,24 @@
 import { LitElement, html, css } from "lit";
 import { getCurrentUser } from "../../services/users.js";
 import { getScoreHistory } from "../../services/colors.js";
+import { getFriends, getFriendRequests } from "../../services/friends.js";
 import globalStyles from "../../styles/global-styles.js";
 import { getSessionUser, clearSession } from "../../session/session.js";
 import { go } from "../../router/router-mixin.js";
 import { routes } from "../../router/routes.js";
+import { getDailyColor } from "../../services/colors.js";
+import { getUserInventory, useItem } from "../../services/shop.js";
 
 class DashboardContainer extends LitElement {
   static properties = {
     user: { type: Object },
     scoreHistory: { type: Object },
     isLoadingHistory: { type: Boolean },
+    friendSummary: { type: Object },
+    dailyChallenge: { type: Object },
+    userInventory: { type: Array },
+    isUsingPowerup: { type: Boolean },
+    powerupMessage: { type: String },
   };
 
   constructor() {
@@ -18,17 +26,41 @@ class DashboardContainer extends LitElement {
     this.user = null;
     this.scoreHistory = null;
     this.isLoadingHistory = true;
+    this.friendSummary = { friends: 0, requests: 0 };
+    this.dailyChallenge = null;
+    this.userInventory = [];
+    this.isUsingPowerup = false;
+    this.powerupMessage = "";
   }
 
   async routeEnter() {
     try {
-      const [user, scoreHistory] = await Promise.all([
+      const [
+        user,
+        scoreHistory,
+        friendsRes,
+        requestsRes,
+        dailyChallenge,
+        inventory,
+      ] = await Promise.all([
         getCurrentUser(),
-        getScoreHistory()
+        getScoreHistory(),
+        getFriends(),
+        getFriendRequests(),
+        getDailyColor(),
+        getUserInventory(),
       ]);
       this.user = user;
       this.scoreHistory = scoreHistory;
+      this.friendSummary = {
+        friends: friendsRes.friends?.length || 0,
+        requests: requestsRes.requests?.length || 0,
+      };
       this.isLoadingHistory = false;
+      this.dailyChallenge = dailyChallenge;
+      this.userInventory = inventory || [];
+      console.log("dailyChallenge", this.dailyChallenge);
+      console.log("userInventory", this.userInventory);
     } catch (error) {
       console.error(error);
       this.isLoadingHistory = false;
@@ -48,13 +80,112 @@ class DashboardContainer extends LitElement {
     go(routes.SCANNER.path);
   }
 
+  handleGoToStore() {
+    go(routes.STORE.path);
+  }
+
+  handleGoToFriends() {
+    go(routes.FRIENDS.path);
+  }
+
+  /**
+   * @param {number} inventoryId
+   */
+  async handleUsePowerup(inventoryId) {
+    if (this.isUsingPowerup) return;
+
+    this.isUsingPowerup = true;
+    this.powerupMessage = "";
+
+    try {
+      const response = await useItem(inventoryId);
+
+      // Refresh user data and score history to get updated attempts
+      const [updatedScoreHistory, updatedInventory] = await Promise.all([
+        getScoreHistory(),
+        getUserInventory(),
+      ]);
+
+      this.scoreHistory = updatedScoreHistory;
+      this.userInventory = updatedInventory || [];
+
+      this.powerupMessage = `${response.message} You now have ${
+        response.effectMetadata?.max_attempts || this.scoreHistory.max_attempts
+      } attempts!`;
+
+      setTimeout(() => {
+        this.powerupMessage = "";
+      }, 5000);
+    } catch (error) {
+      console.error("Error using powerup:", error);
+      this.powerupMessage = error.message || "Failed to use powerup";
+
+      setTimeout(() => {
+        this.powerupMessage = "";
+      }, 5000);
+    } finally {
+      this.isUsingPowerup = false;
+    }
+  }
+
+  /**
+   * @returns {Array}
+   */
+  getAvailablePowerups() {
+    return this.userInventory.filter(
+      (invItem) => invItem.item.itemType === "powerup" && invItem.quantity > 0
+    );
+  }
+
   getBestAttempt() {
-    if (!this.scoreHistory || !this.scoreHistory.attempts || this.scoreHistory.attempts.length === 0) {
+    if (
+      !this.scoreHistory ||
+      !this.scoreHistory.attempts ||
+      this.scoreHistory.attempts.length === 0
+    ) {
       return null;
     }
-    return this.scoreHistory.attempts.reduce((best, current) => 
+    return this.scoreHistory.attempts.reduce((best, current) =>
       current.score > best.score ? current : best
     );
+  }
+
+  renderPowerups() {
+    const powerups = this.getAvailablePowerups();
+
+    if (powerups.length === 0) {
+      return html``;
+    }
+
+    return html`
+      <div class="powerups-card">
+        <h3>Available Powerups</h3>
+        <div class="powerups-list">
+          ${powerups.map(
+            (invItem) => html`
+              <div class="powerup-item">
+                <div class="powerup-info">
+                  <div class="powerup-name">${invItem.item.name}</div>
+                  <div class="powerup-description">
+                    ${invItem.item.description}
+                  </div>
+                  <div class="powerup-quantity">
+                    Quantity: ${invItem.quantity}
+                  </div>
+                </div>
+                <button
+                  class="use-powerup-button"
+                  @click=${() => this.handleUsePowerup(invItem.inventoryId)}
+                  ?disabled=${this.isUsingPowerup}
+                >
+                  ${this.isUsingPowerup ? "Using..." : "Use"}
+                </button>
+              </div>
+            `
+          )}
+        </div>
+      </div>
+    `;
   }
 
   render() {
@@ -80,34 +211,50 @@ class DashboardContainer extends LitElement {
                   <p>Match today's color to earn points!</p>
                 </div>
 
+                ${this.powerupMessage
+                  ? html`
+                      <div class="powerup-message">${this.powerupMessage}</div>
+                    `
+                  : ""}
+                ${this.renderPowerups()}
+
                 <div class="game-status-card">
-                  <h3>Today's Challenge</h3>
                   ${this.isLoadingHistory
                     ? html`<loading-spinner></loading-spinner>`
                     : this.renderGameStatus()}
                 </div>
 
-                ${this.scoreHistory && this.scoreHistory.attempts && this.scoreHistory.attempts.length > 0
+                ${this.scoreHistory &&
+                this.scoreHistory.attempts &&
+                this.scoreHistory.attempts.length > 0
                   ? html`
                       <div class="attempts-card">
                         <h3>Your Attempts Today</h3>
                         ${this.renderAttempts()}
                       </div>
                     `
-                  : ''}
+                  : ""}
 
                 <div class="stats-grid">
-                  <div class="stat-card">
-                    <div class="stat-label">Points</div>
-                    <div class="stat-value">${this.user.points || 0}</div>
-                  </div>
-                  <div class="stat-card">
-                    <div class="stat-label">Level</div>
-                    <div class="stat-value">${this.user.level || 1}</div>
-                  </div>
-                  <div class="stat-card">
+                  <div
+                    class="stat-card clickable"
+                    @click=${this.handleGoToStore}
+                  >
                     <div class="stat-label">Credits</div>
                     <div class="stat-value">${this.user.credits || 0}</div>
+                    <div class="stat-action">View Shop</div>
+                  </div>
+                  <div
+                    class="stat-card clickable"
+                    @click=${this.handleGoToFriends}
+                  >
+                    <div class="stat-label">Friends</div>
+                    <div class="stat-value">${this.friendSummary.friends}</div>
+                    <div class="stat-action">
+                      ${this.friendSummary.requests > 0
+                        ? `${this.friendSummary.requests} pending`
+                        : "View Friends"}
+                    </div>
                   </div>
                 </div>
               `
@@ -119,9 +266,7 @@ class DashboardContainer extends LitElement {
 
   renderGameStatus() {
     if (!this.scoreHistory) {
-      return html`
-        <p>Unable to load game status</p>
-      `;
+      return html` <p>Unable to load game status</p> `;
     }
 
     const attemptsLeft = this.scoreHistory.attempts_left || 0;
@@ -129,13 +274,21 @@ class DashboardContainer extends LitElement {
     const bestScore = this.scoreHistory.best_score || 0;
     const bestAttempt = this.getBestAttempt();
 
+    const maxAttempts = this.scoreHistory.max_attempts || 5;
+
     if (attemptsUsed === 0) {
       return html`
         <div class="game-status-content">
+          <p class="status-text">
+            Today's Color: ${this.dailyChallenge.color_name}
+          </p>
           <p class="status-text">You haven't started today's challenge yet!</p>
-          <p class="attempts-info">You have <strong>5 attempts</strong> to find the mystery color.</p>
+          <p class="attempts-info">
+            You have <strong>${maxAttempts} attempts</strong> to find the
+            mystery color.
+          </p>
           <button class="scan-button" @click=${this.handleGoToScanner}>
-            🎨 Start Scanning
+            Start Scanning
           </button>
         </div>
       `;
@@ -144,17 +297,30 @@ class DashboardContainer extends LitElement {
     if (attemptsLeft === 0) {
       return html`
         <div class="game-status-content">
-          <p class="status-text">Today's challenge complete!</p>
-          <p class="attempts-info">You used all <strong>5 attempts</strong></p>
-          ${bestAttempt ? html`
-            <div class="best-attempt-preview">
-              <span>Your Best Score:</span>
-              <div class="score-badge ${bestScore >= 80 ? 'excellent' : bestScore >= 60 ? 'good' : 'poor'}">
-                ${bestScore}
-              </div>
-            </div>
-          ` : ''}
-          <button class="scan-button secondary" @click=${this.handleGoToScanner}>
+          <p class="status-text">Today's Color complete!</p>
+          <p class="attempts-info">
+            You used all <strong>${maxAttempts} attempts</strong>
+          </p>
+          ${bestAttempt
+            ? html`
+                <div class="best-attempt-preview">
+                  <span>Your Best Score:</span>
+                  <div
+                    class="score-badge ${bestScore >= 80
+                      ? "excellent"
+                      : bestScore >= 60
+                      ? "good"
+                      : "poor"}"
+                  >
+                    ${bestScore}
+                  </div>
+                </div>
+              `
+            : ""}
+          <button
+            class="scan-button secondary"
+            @click=${this.handleGoToScanner}
+          >
             View Results
           </button>
         </div>
@@ -163,20 +329,31 @@ class DashboardContainer extends LitElement {
 
     return html`
       <div class="game-status-content">
-        <p class="status-text">Challenge in progress!</p>
-        <p class="attempts-info">
-          <strong>${attemptsLeft} attempts</strong> remaining
+        <p class="status-text">
+          Today's Color: ${this.dailyChallenge.color_name}
         </p>
-        ${bestAttempt ? html`
-          <div class="best-attempt-preview">
-            <span>Current Best:</span>
-            <div class="score-badge ${bestScore >= 80 ? 'excellent' : bestScore >= 60 ? 'good' : 'poor'}">
-              ${bestScore}
-            </div>
-          </div>
-        ` : ''}
+        <p class="attempts-info">
+          <strong>${attemptsLeft} attempts</strong> remaining out of
+          <strong>${maxAttempts}</strong>
+        </p>
+        ${bestAttempt
+          ? html`
+              <div class="best-attempt-preview">
+                <span>Current Best:</span>
+                <div
+                  class="score-badge ${bestScore >= 80
+                    ? "excellent"
+                    : bestScore >= 60
+                    ? "good"
+                    : "poor"}"
+                >
+                  ${bestScore}
+                </div>
+              </div>
+            `
+          : ""}
         <button class="scan-button" @click=${this.handleGoToScanner}>
-          🎨 Continue Scanning
+          Continue Scanning
         </button>
       </div>
     `;
@@ -188,22 +365,27 @@ class DashboardContainer extends LitElement {
 
     return html`
       <div class="attempts-list">
-        ${attempts.map(attempt => html`
-          <div class="attempt-item ${attempt === bestAttempt ? 'best' : ''}">
-            <span class="attempt-number">#${attempt.attempt_number}</span>
-            <div 
-              class="attempt-color" 
-              style="background-color: rgb(${attempt.submitted_color_r}, ${attempt.submitted_color_g}, ${attempt.submitted_color_b})"
-            ></div>
-            <div class="attempt-details">
-              <span class="attempt-rgb">
-                RGB(${attempt.submitted_color_r}, ${attempt.submitted_color_g}, ${attempt.submitted_color_b})
-              </span>
-              <span class="attempt-score">Score: ${attempt.score}%</span>
+        ${attempts.map(
+          (attempt) => html`
+            <div class="attempt-item ${attempt === bestAttempt ? "best" : ""}">
+              <span class="attempt-number">#${attempt.attempt_number}</span>
+              <div
+                class="attempt-color"
+                style="background-color: rgb(${attempt.submitted_color_r}, ${attempt.submitted_color_g}, ${attempt.submitted_color_b})"
+              ></div>
+              <div class="attempt-details">
+                <span class="attempt-rgb">
+                  RGB(${attempt.submitted_color_r},
+                  ${attempt.submitted_color_g}, ${attempt.submitted_color_b})
+                </span>
+                <span class="attempt-score">Score: ${attempt.score}%</span>
+              </div>
+              ${attempt === bestAttempt
+                ? html`<span class="best-badge-small">Best</span>`
+                : ""}
             </div>
-            ${attempt === bestAttempt ? html`<span class="best-badge-small">Best</span>` : ''}
-          </div>
-        `)}
+          `
+        )}
       </div>
     `;
   }
@@ -265,6 +447,24 @@ class DashboardContainer extends LitElement {
         text-align: center;
       }
 
+      .stat-card.clickable {
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .stat-card.clickable:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+      }
+
+      .stat-action {
+        margin-top: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--app-primary-color);
+      }
+
       .stat-icon {
         font-size: 48px;
         margin-bottom: 12px;
@@ -288,12 +488,111 @@ class DashboardContainer extends LitElement {
       .info-card,
       .game-section,
       .game-status-card,
-      .attempts-card {
+      .attempts-card,
+      .powerups-card {
         background: white;
         padding: 24px;
         margin-bottom: 24px;
         border-radius: 8px;
         box-shadow: var(--box-shadow);
+      }
+
+      .powerup-message {
+        background: #d1fae5;
+        color: #065f46;
+        border: 2px solid #10b981;
+        padding: 16px 24px;
+        border-radius: 8px;
+        margin-bottom: 24px;
+        font-weight: 600;
+        text-align: center;
+        animation: slideIn 0.3s ease;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .powerups-card h3 {
+        margin: 0 0 20px 0;
+        color: var(--app-primary-color);
+      }
+
+      .powerups-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .powerup-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        background: var(--app-white);
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        transition: all 0.2s ease;
+      }
+
+      .powerup-item:hover {
+        border-color: var(--app-primary-color);
+        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+      }
+
+      .powerup-info {
+        flex: 1;
+      }
+
+      .powerup-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--app-primary-color);
+        margin-bottom: 4px;
+      }
+
+      .powerup-description {
+        font-size: 14px;
+        color: var(--app-grey);
+        margin-bottom: 4px;
+      }
+
+      .powerup-quantity {
+        font-size: 12px;
+        font-weight: 600;
+        color: #6b7280;
+      }
+
+      .use-powerup-button {
+        background-color: #10b981;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 100px;
+      }
+
+      .use-powerup-button:hover:not(:disabled) {
+        background-color: #059669;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+      }
+
+      .use-powerup-button:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+        opacity: 0.6;
       }
 
       .game-status-card h3,

@@ -1,7 +1,11 @@
-import { LitElement, html, css } from 'lit'
-import { getDailyColor, submitScore, getScoreHistory } from '../../services/colors.js'
-import globalStyles from '../../styles/global-styles.js'
-import '../../shared/components/loading-spinner.js'
+import { LitElement, html, css } from "lit";
+import {
+  getDailyColor,
+  submitScore,
+  getScoreHistory,
+} from "../../services/colors.js";
+import globalStyles from "../../styles/global-styles.js";
+import "../../shared/components/loading-spinner.js";
 
 class ColorScanner extends LitElement {
   static properties = {
@@ -17,171 +21,179 @@ class ColorScanner extends LitElement {
     gameComplete: { type: Boolean },
     previewColor: { type: Object },
     showingPreview: { type: Boolean },
-  }
+  };
 
   constructor() {
-    super()
-    this.targetColor = null
-    this.isLoading = true
-    this.video = null
-    this.attempts = []
-    this.currentAttempt = 0
-    this.maxAttempts = 5
-    this.isSubmitting = false
-    this.message = ''
-    this.messageType = ''
-    this.gameComplete = false
-    this.previewColor = null
-    this.showingPreview = false
+    super();
+    this.targetColor = null;
+    this.isLoading = true;
+    this.video = null;
+    this.attempts = [];
+    this.currentAttempt = 0;
+    this.maxAttempts = 5;
+    this.isSubmitting = false;
+    this.message = "";
+    this.messageType = "";
+    this.gameComplete = false;
+    this.previewColor = null;
+    this.showingPreview = false;
   }
 
   async connectedCallback() {
-    super.connectedCallback()
-    await this.loadGameState()
-    
+    super.connectedCallback();
+    await this.loadGameState();
+
     // Only init camera if game is not complete
     if (!this.gameComplete) {
       requestAnimationFrame(() => {
-        this.initCamera()
-      })
+        this.initCamera();
+      });
     }
   }
 
   async loadGameState() {
     try {
-      // Load target color and score history in parallel
       const [targetColor, scoreHistory] = await Promise.all([
         getDailyColor(),
-        getScoreHistory()
-      ])
-      
-      this.targetColor = targetColor
-      
-      // Load existing attempts from backend
-      if (scoreHistory && scoreHistory.attempts && scoreHistory.attempts.length > 0) {
-        this.attempts = scoreHistory.attempts.map(attempt => ({
+        getScoreHistory(),
+      ]);
+
+      this.targetColor = targetColor;
+      this.maxAttempts = scoreHistory?.max_attempts || 5;
+      this.currentAttempt = scoreHistory?.attempts_used || 0;
+      this.gameComplete = scoreHistory?.attempts_left === 0;
+
+      if (scoreHistory?.attempts?.length) {
+        this.attempts = scoreHistory.attempts.map((attempt) => ({
           red: attempt.submitted_color_r,
           green: attempt.submitted_color_g,
           blue: attempt.submitted_color_b,
           score: attempt.score,
           attemptNumber: attempt.attempt_number,
-        }))
-        this.currentAttempt = scoreHistory.attempts_used
-        
-        // Check if game is complete
+        }));
+
         if (this.currentAttempt >= this.maxAttempts) {
-          this.gameComplete = true
+          this.gameComplete = true;
         }
+      } else {
+        this.attempts = [];
       }
-      
-      this.isLoading = false
+
+      this.isLoading = false;
     } catch (error) {
-      console.error('Error loading game state:', error)
-      this.message = 'Failed to load game data'
-      this.messageType = 'error'
-      this.isLoading = false
+      console.error("Error loading game state:", error);
+      this.message = "Failed to load game data";
+      this.messageType = "error";
+      this.isLoading = false;
     }
   }
 
   initCamera() {
-    this.video = this.shadowRoot.getElementById('cameraFeed')
-    if (!this.video) return
+    this.video = this.shadowRoot.getElementById("cameraFeed");
+    if (!this.video) return;
 
     const constraints = {
-      video: { 
-        facingMode: 'environment',
+      video: {
+        facingMode: "environment",
         width: { ideal: 640 },
         height: { ideal: 640 },
-      }
-    }
+      },
+    };
 
     navigator.mediaDevices
       .getUserMedia(constraints)
       .then((stream) => {
-        this.video.srcObject = stream
+        this.video.srcObject = stream;
       })
       .catch((error) => {
-        console.error('Error accessing camera:', error)
-        this.message = 'Camera access denied or unavailable'
-        this.messageType = 'error'
-      })
+        console.error("Error accessing camera:", error);
+        this.message = "Camera access denied or unavailable";
+        this.messageType = "error";
+      });
   }
 
   drawCircle() {
-    const canvas = this.shadowRoot.getElementById('canvasOverlay')
-    if (!canvas) return
+    const canvas = this.shadowRoot.getElementById("canvasOverlay");
+    if (!canvas) return;
 
-    const context = canvas.getContext('2d')
-    context.clearRect(0, 0, canvas.width, canvas.height)
+    const context = canvas.getContext("2d");
+    context.clearRect(0, 0, canvas.width, canvas.height);
 
     // Add a circle overlay at the center
-    const centerX = canvas.width / 2
-    const centerY = canvas.height / 2
-    const radius = 30
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const radius = 30;
 
-    context.beginPath()
-    context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false)
-    context.lineWidth = 4
-    context.strokeStyle = 'white'
-    context.stroke()
+    context.beginPath();
+    context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
+    context.lineWidth = 4;
+    context.strokeStyle = "white";
+    context.stroke();
 
     // Add crosshair
-    context.beginPath()
-    context.moveTo(centerX - 10, centerY)
-    context.lineTo(centerX + 10, centerY)
-    context.moveTo(centerX, centerY - 10)
-    context.lineTo(centerX, centerY + 10)
-    context.strokeStyle = 'white'
-    context.lineWidth = 2
-    context.stroke()
+    context.beginPath();
+    context.moveTo(centerX - 10, centerY);
+    context.lineTo(centerX + 10, centerY);
+    context.moveTo(centerX, centerY - 10);
+    context.lineTo(centerX, centerY + 10);
+    context.strokeStyle = "white";
+    context.lineWidth = 2;
+    context.stroke();
   }
 
   captureImage() {
-    const video = this.shadowRoot.getElementById('cameraFeed')
-    const canvas = this.shadowRoot.getElementById('captureCanvas')
-    
-    if (!video || !canvas) return
+    const video = this.shadowRoot.getElementById("cameraFeed");
+    const canvas = this.shadowRoot.getElementById("captureCanvas");
 
-    const context = canvas.getContext('2d', { willReadFrequently: true })
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
+    if (!video || !canvas) return;
 
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     // Get pixel from center
-    const centerX = Math.floor(canvas.width / 2)
-    const centerY = Math.floor(canvas.height / 2)
-    const pixel = context.getImageData(centerX, centerY, 1, 1).data
+    const centerX = Math.floor(canvas.width / 2);
+    const centerY = Math.floor(canvas.height / 2);
+    const pixel = context.getImageData(centerX, centerY, 1, 1).data;
 
-    const red = pixel[0]
-    const green = pixel[1]
-    const blue = pixel[2]
+    const red = pixel[0];
+    const green = pixel[1];
+    const blue = pixel[2];
 
     // Store preview and show confirmation
-    this.previewColor = { red, green, blue }
-    this.showingPreview = true
-    this.requestUpdate()
+    this.previewColor = { red, green, blue };
+    this.showingPreview = true;
+    this.requestUpdate();
+  }
+
+  stopCameraStream() {
+    const video = this.shadowRoot?.getElementById("cameraFeed");
+    if (video?.srcObject) {
+      video.srcObject.getTracks().forEach((track) => track.stop());
+    }
   }
 
   handleCancelPreview() {
-    this.previewColor = null
-    this.showingPreview = false
-    this.requestUpdate()
+    this.previewColor = null;
+    this.showingPreview = false;
+    this.requestUpdate();
   }
 
   async handleConfirmCapture() {
-    if (!this.previewColor || this.isSubmitting) return
+    if (!this.previewColor || this.isSubmitting) return;
 
-    this.isSubmitting = true
-    this.message = ''
+    this.isSubmitting = true;
+    this.message = "";
 
     try {
-      const response = await submitScore({ 
-        r: this.previewColor.red, 
-        g: this.previewColor.green, 
-        b: this.previewColor.blue 
-      })
-      
+      const response = await submitScore({
+        r: this.previewColor.red,
+        g: this.previewColor.green,
+        b: this.previewColor.blue,
+      });
+
       // Store attempt with data from backend
       this.attempts.push({
         red: this.previewColor.red,
@@ -189,73 +201,68 @@ class ColorScanner extends LitElement {
         blue: this.previewColor.blue,
         score: response.score,
         attemptNumber: response.attempt_number,
-      })
+      });
 
-      this.currentAttempt = response.attempt_number
+      this.currentAttempt = response.attempt_number;
+      this.maxAttempts = response.max_attempts || this.maxAttempts;
 
       // Clear preview
-      this.previewColor = null
-      this.showingPreview = false
+      this.previewColor = null;
+      this.showingPreview = false;
 
-      // Check if game is complete
       if (response.attempts_left === 0) {
-        this.gameComplete = true
-        // Stop camera stream
-        const video = this.shadowRoot.getElementById('cameraFeed')
-        if (video && video.srcObject) {
-          video.srcObject.getTracks().forEach(track => track.stop())
-        }
+        this.gameComplete = true;
+        this.stopCameraStream();
       }
 
-      this.requestUpdate()
+
+      this.requestUpdate();
     } catch (error) {
-      console.error('Error submitting score:', error)
-      this.message = error.message || 'Failed to submit attempt'
-      this.messageType = 'error'
-      // Don't clear preview on error so user can retry
+      console.error("Error submitting score:", error);
+      this.message = error.message || "Failed to submit attempt";
+      this.messageType = "error";
     } finally {
-      this.isSubmitting = false
+      this.isSubmitting = false;
     }
   }
 
   getBestAttempt() {
-    if (this.attempts.length === 0) return null
-    return this.attempts.reduce((best, current) => 
+    if (this.attempts.length === 0) return null;
+    return this.attempts.reduce((best, current) =>
       current.score > best.score ? current : best
-    )
+    );
   }
 
   getAverageScore() {
-    if (this.attempts.length === 0) return 0
-    const sum = this.attempts.reduce((total, attempt) => total + attempt.score, 0)
-    return Math.round(sum / this.attempts.length)
+    if (this.attempts.length === 0) return 0;
+    const sum = this.attempts.reduce(
+      (total, attempt) => total + attempt.score,
+      0
+    );
+    return Math.round(sum / this.attempts.length);
   }
 
   async handleRetry() {
     // Reload game state from backend
-    this.attempts = []
-    this.currentAttempt = 0
-    this.gameComplete = false
-    this.message = ''
-    this.messageType = ''
-    this.isLoading = true
-    
-    await this.loadGameState()
-    
+    this.attempts = [];
+    this.currentAttempt = 0;
+    this.gameComplete = false;
+    this.message = "";
+    this.messageType = "";
+    this.isLoading = true;
+
+    await this.loadGameState();
+
     if (!this.gameComplete) {
       requestAnimationFrame(() => {
-        this.initCamera()
-      })
+        this.initCamera();
+      });
     }
   }
 
   disconnectedCallback() {
-    super.disconnectedCallback()
-    // Clean up camera stream
-    const video = this.shadowRoot?.getElementById('cameraFeed')
-    if (video?.srcObject) {
-      video.srcObject.getTracks().forEach(track => track.stop())
-    }
+    super.disconnectedCallback();
+    this.stopCameraStream();
   }
 
   render() {
@@ -265,7 +272,7 @@ class ColorScanner extends LitElement {
           <loading-spinner></loading-spinner>
           <p>Loading today's challenge...</p>
         </div>
-      `
+      `;
     }
 
     if (!this.targetColor) {
@@ -275,12 +282,16 @@ class ColorScanner extends LitElement {
             <p>No daily color available</p>
           </div>
         </div>
-      `
+      `;
     }
 
     return html`
-      ${this.gameComplete ? this.renderResults() : this.showingPreview ? this.renderPreview() : this.renderScanner()}
-    `
+      ${this.gameComplete
+        ? this.renderResults()
+        : this.showingPreview
+        ? this.renderPreview()
+        : this.renderScanner()}
+    `;
   }
 
   renderScanner() {
@@ -289,21 +300,25 @@ class ColorScanner extends LitElement {
         <div class="instructions-card">
           <h3>Daily Color Challenge</h3>
           <p>Try to find and capture the mystery color of the day!</p>
-          <p>You have <strong>${this.maxAttempts - this.currentAttempt}</strong> attempts remaining.</p>
+          <p>
+            You have
+            <strong>${this.maxAttempts - this.currentAttempt}</strong> attempts
+            remaining.
+          </p>
         </div>
 
-        ${this.attempts.length > 0 ? this.renderAttempts() : ''}
+        ${this.attempts.length > 0 ? this.renderAttempts() : ""}
 
         <div class="camera-section">
           <p class="instructions">
             Point your camera at colors in your environment
           </p>
-          
+
           <div class="video-container">
             <video id="cameraFeed" autoplay playsinline></video>
             <canvas id="canvasOverlay"></canvas>
           </div>
-          
+
           <button class="capture-button" @click=${this.captureImage}>
             Capture Color (${this.currentAttempt + 1}/${this.maxAttempts})
           </button>
@@ -311,15 +326,15 @@ class ColorScanner extends LitElement {
 
         <canvas id="captureCanvas" style="display: none;"></canvas>
 
-        ${this.message && this.messageType === 'error'
+        ${this.message && this.messageType === "error"
           ? html`
               <div class="message error">
                 <p>${this.message}</p>
               </div>
             `
-          : ''}
+          : ""}
       </div>
-    `
+    `;
   }
 
   renderPreview() {
@@ -327,13 +342,16 @@ class ColorScanner extends LitElement {
       <div class="preview-wrapper">
         <div class="preview-card">
           <h3>Color Captured!</h3>
-          <p class="preview-instructions">Review your captured color before submitting.</p>
-          
-          <div 
-            class="preview-color" 
-            style="background-color: rgb(${this.previewColor.red}, ${this.previewColor.green}, ${this.previewColor.blue})"
+          <p class="preview-instructions">
+            Review your captured color before submitting.
+          </p>
+
+          <div
+            class="preview-color"
+            style="background-color: rgb(${this.previewColor.red}, ${this
+              .previewColor.green}, ${this.previewColor.blue})"
           ></div>
-          
+
           <div class="preview-rgb">
             <h4>RGB Values</h4>
             <div class="rgb-display">
@@ -347,33 +365,33 @@ class ColorScanner extends LitElement {
             Note: You won't see your score until after you submit.
           </p>
 
-          ${this.message && this.messageType === 'error'
+          ${this.message && this.messageType === "error"
             ? html`
                 <div class="message error">
                   <p>${this.message}</p>
                 </div>
               `
-            : ''}
+            : ""}
 
           <div class="preview-buttons">
-            <button 
-              class="cancel-button" 
+            <button
+              class="cancel-button"
               @click=${this.handleCancelPreview}
               ?disabled=${this.isSubmitting}
             >
               ↻ Scan Again
             </button>
-            <button 
-              class="confirm-button" 
+            <button
+              class="confirm-button"
               @click=${this.handleConfirmCapture}
               ?disabled=${this.isSubmitting}
             >
-              ${this.isSubmitting ? 'Submitting...' : '✓ Submit This Color'}
+              ${this.isSubmitting ? "Submitting..." : "✓ Submit This Color"}
             </button>
           </div>
         </div>
       </div>
-    `
+    `;
   }
 
   renderAttempts() {
@@ -381,34 +399,41 @@ class ColorScanner extends LitElement {
       <div class="attempts-section">
         <h4>Your Attempts</h4>
         <div class="attempts-grid">
-          ${this.attempts.map(attempt => html`
-            <div class="attempt-card">
-              <div 
-                class="attempt-color" 
-                style="background-color: rgb(${attempt.red}, ${attempt.green}, ${attempt.blue})"
-              ></div>
-              <div class="attempt-info">
-                <span class="attempt-number">#${attempt.attemptNumber}</span>
-                <span class="attempt-score">${attempt.score}%</span>
+          ${this.attempts.map(
+            (attempt) => html`
+              <div class="attempt-card">
+                <div
+                  class="attempt-color"
+                  style="background-color: rgb(${attempt.red}, ${attempt.green}, ${attempt.blue})"
+                ></div>
+                <div class="attempt-info">
+                  <span class="attempt-number">#${attempt.attemptNumber}</span>
+                  <span class="attempt-score">${attempt.score}%</span>
+                </div>
               </div>
-            </div>
-          `)}
+            `
+          )}
         </div>
       </div>
-    `
+    `;
   }
 
   renderResults() {
-    const bestAttempt = this.getBestAttempt()
-    const averageScore = this.getAverageScore()
-    const scoreClass = bestAttempt.score >= 80 ? 'excellent' : bestAttempt.score >= 60 ? 'good' : 'poor'
-    
+    const bestAttempt = this.getBestAttempt();
+    const averageScore = this.getAverageScore();
+    const scoreClass =
+      bestAttempt.score >= 80
+        ? "excellent"
+        : bestAttempt.score >= 60
+        ? "good"
+        : "poor";
+
     return html`
       <div class="result-wrapper">
         <div class="reveal-card">
           <h3>The Mystery Color Was...</h3>
-          <div 
-            class="color-preview large" 
+          <div
+            class="color-preview large"
             style="background-color: ${this.targetColor.rgb}"
           ></div>
           <p class="color-name">${this.targetColor.color_name}</p>
@@ -436,18 +461,27 @@ class ColorScanner extends LitElement {
         <div class="all-attempts-section">
           <h4>All Your Attempts</h4>
           <div class="attempts-list">
-            ${this.attempts.map((attempt, index) => html`
-              <div class="attempt-row ${attempt === bestAttempt ? 'best' : ''}">
-                <span class="attempt-number">#${attempt.attemptNumber}</span>
-                <div 
-                  class="attempt-color-small" 
-                  style="background-color: rgb(${attempt.red}, ${attempt.green}, ${attempt.blue})"
-                ></div>
-                <span class="attempt-rgb">RGB(${attempt.red}, ${attempt.green}, ${attempt.blue})</span>
-                <span class="attempt-score">${attempt.score}%</span>
-                ${attempt === bestAttempt ? html`<span class="best-badge">Best</span>` : ''}
-              </div>
-            `)}
+            ${this.attempts.map(
+              (attempt, index) => html`
+                <div
+                  class="attempt-row ${attempt === bestAttempt ? "best" : ""}"
+                >
+                  <span class="attempt-number">#${attempt.attemptNumber}</span>
+                  <div
+                    class="attempt-color-small"
+                    style="background-color: rgb(${attempt.red}, ${attempt.green}, ${attempt.blue})"
+                  ></div>
+                  <span class="attempt-rgb"
+                    >RGB(${attempt.red}, ${attempt.green},
+                    ${attempt.blue})</span
+                  >
+                  <span class="attempt-score">${attempt.score}%</span>
+                  ${attempt === bestAttempt
+                    ? html`<span class="best-badge">Best</span>`
+                    : ""}
+                </div>
+              `
+            )}
           </div>
         </div>
 
@@ -457,21 +491,23 @@ class ColorScanner extends LitElement {
                 <p>${this.message}</p>
               </div>
             `
-          : ''}
+          : ""}
 
         <div class="button-group">
           <button class="retry-button full-width" @click=${this.handleRetry}>
-            ${this.currentAttempt >= this.maxAttempts ? 'Check for Tomorrow\'s Challenge' : 'Continue Playing'}
+            ${this.currentAttempt >= this.maxAttempts
+              ? "Check for Tomorrow's Challenge"
+              : "Continue Playing"}
           </button>
         </div>
       </div>
-    `
+    `;
   }
 
   updated(changedProperties) {
-    super.updated(changedProperties)
+    super.updated(changedProperties);
     if (!this.gameComplete) {
-      requestAnimationFrame(() => this.drawCircle())
+      requestAnimationFrame(() => this.drawCircle());
     }
   }
 
@@ -966,8 +1002,8 @@ class ColorScanner extends LitElement {
         }
       }
     `,
-  ]
+  ];
 }
 
-customElements.define('color-scanner', ColorScanner)
-export default ColorScanner
+customElements.define("color-scanner", ColorScanner);
+export default ColorScanner;

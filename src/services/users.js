@@ -25,6 +25,19 @@ export function getCurrentUser() {
   });
 }
 
+/**
+ * Check if the user's authentication token is valid
+ * @returns {Promise<boolean>}
+ */
+export async function checkAuthStatus() {
+  try {
+    await getCurrentUser();
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
 export function updateUser(userData) {
   return apiFetch(`/v1/users/me/update`, "PUT", userData).then(async (r) => {
     const text = await r.text();

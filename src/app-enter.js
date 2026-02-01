@@ -1,19 +1,13 @@
-import { LitElement, html, css } from 'lit'
-import routerMixin from './router/router-mixin.js'
-import globalStyles from './styles/global-styles.js'
+import { LitElement, html, css } from "lit";
+import routerMixin from "./router/router-mixin.js";
+import globalStyles from "./styles/global-styles.js";
 
 class AppEnterElement extends routerMixin(LitElement) {
   render() {
     return html`
-      ${this.showHeader
-        ? html`
-            <header>
-              <h1>Color Game</h1>
-            </header>
-          `
-        : null}
+      ${this.showHeader ? html` <header></header> ` : null}
       <slot></slot>
-    `
+    `;
   }
 
   static styles = [
@@ -47,8 +41,8 @@ class AppEnterElement extends routerMixin(LitElement) {
         overflow: auto;
       }
     `,
-  ]
+  ];
 }
 
-customElements.define('app-enter', AppEnterElement)
-export default AppEnterElement
+customElements.define("app-enter", AppEnterElement);
+export default AppEnterElement;
