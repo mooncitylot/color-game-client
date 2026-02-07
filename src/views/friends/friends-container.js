@@ -102,7 +102,8 @@ class FriendsContainer extends LitElement {
   async handleRespond(friendshipId, action) {
     try {
       await respondToFriendRequest(friendshipId, action);
-      this.successMessage = action === "accept" ? "Friend added!" : "Request declined";
+      this.successMessage =
+        action === "accept" ? "Friend added!" : "Request declined";
       await this.loadFriendsData();
       setTimeout(() => (this.successMessage = null), 3000);
     } catch (error) {
@@ -149,14 +150,6 @@ class FriendsContainer extends LitElement {
 
     return html`
       <div class="friends-container">
-        <header>
-          <div class="header-content">
-            <h1>Friends</h1>
-            <button @click=${this.handleBackToDashboard}>Back to Dashboard</button>
-          </div>
-          <p>Find friends, manage requests, and follow their activity.</p>
-        </header>
-
         ${this.renderMessages()}
 
         <div class="content-grid">
@@ -176,9 +169,9 @@ class FriendsContainer extends LitElement {
                   }
                 }}
               />
-              <button type="submit" ?disabled=${this.isSearching}>${
-                this.isSearching ? "Searching..." : "Search"
-              }</button>
+              <button type="submit" ?disabled=${this.isSearching}>
+                ${this.isSearching ? "Searching..." : "Search"}
+              </button>
             </form>
             ${this.renderSearchResults()}
           </section>
@@ -189,7 +182,9 @@ class FriendsContainer extends LitElement {
               <span class="count">${this.friends.length} total</span>
             </div>
             ${this.friends.length === 0
-              ? html`<p class="empty-state">You don't have any friends yet. Start connecting!</p>`
+              ? html`<p class="empty-state">
+                  You don't have any friends yet. Start connecting!
+                </p>`
               : this.renderFriendsList()}
           </section>
         </div>
@@ -211,7 +206,9 @@ class FriendsContainer extends LitElement {
               <span class="count">${this.activity.length} recent</span>
             </div>
             ${this.activity.length === 0
-              ? html`<p class="empty-state">No recent activity from friends.</p>`
+              ? html`<p class="empty-state">
+                  No recent activity from friends.
+                </p>`
               : this.renderActivityList()}
           </section>
         </div>
@@ -236,21 +233,25 @@ class FriendsContainer extends LitElement {
         ${this.friends.map(
           (friend) => html`
             <li>
-               <div class="friend-info">
-                 <div>
-                   <h3>${friend.friend.username}</h3>
-                   <p>Level ${friend.friend.level} • ${friend.friend.points} pts</p>
-                 </div>
-               </div>
-               <div class="friend-actions">
-                 <span class="status accepted">Friends</span>
-                 <button class="secondary" @click=${() => this.handleRemoveFriend(friend.friendshipId)}>
-                   Remove
-                 </button>
-               </div>
-             </li>
-
-          `
+              <div class="friend-info">
+                <div>
+                  <h3>${friend.friend.username}</h3>
+                  <p>
+                    Level ${friend.friend.level} • ${friend.friend.points} pts
+                  </p>
+                </div>
+              </div>
+              <div class="friend-actions">
+                <span class="status accepted">Friends</span>
+                <button
+                  class="secondary"
+                  @click=${() => this.handleRemoveFriend(friend.friendshipId)}
+                >
+                  Remove
+                </button>
+              </div>
+            </li>
+          `,
         )}
       </ul>
     `;
@@ -270,19 +271,24 @@ class FriendsContainer extends LitElement {
               ${request.direction === "incoming"
                 ? html`
                     <div class="request-actions">
-                      <button class="secondary" @click=${() =>
-                        this.handleRespond(request.friendshipId, "decline")}>
+                      <button
+                        class="secondary"
+                        @click=${() =>
+                          this.handleRespond(request.friendshipId, "decline")}
+                      >
                         Decline
                       </button>
-                      <button @click=${() =>
-                        this.handleRespond(request.friendshipId, "accept")}>
+                      <button
+                        @click=${() =>
+                          this.handleRespond(request.friendshipId, "accept")}
+                      >
                         Accept
                       </button>
                     </div>
                   `
                 : html`<span class="status pending">Pending</span>`}
             </li>
-          `
+          `,
         )}
       </ul>
     `;
@@ -297,13 +303,14 @@ class FriendsContainer extends LitElement {
               <div>
                 <h3>${entry.username}</h3>
                 <p>
-                  Best score: <strong>${entry.bestScore}%</strong> (${entry.attemptsUsed} attempts)
-                  on ${entry.date}
+                  Best score:
+                  <strong>${entry.bestScore}%</strong> (${entry.attemptsUsed}
+                  attempts) on ${entry.date}
                 </p>
               </div>
               <div class="score-badge">${entry.bestScore}</div>
             </li>
-          `
+          `,
         )}
       </ul>
     `;
@@ -332,19 +339,19 @@ class FriendsContainer extends LitElement {
                 ${isFriend
                   ? html`<span class="status accepted">Friends</span>`
                   : isPending
-                  ? html`
-                      <span class="status pending">
-                        ${isOutgoing ? "Request Sent" : "Respond Pending"}
-                      </span>
-                    `
-                  : html`
-                      <button
-                        class="secondary"
-                        @click=${() => this.handleSendRequest(result.userId)}
-                      >
-                        Add Friend
-                      </button>
-                    `}
+                    ? html`
+                        <span class="status pending">
+                          ${isOutgoing ? "Request Sent" : "Respond Pending"}
+                        </span>
+                      `
+                    : html`
+                        <button
+                          class="secondary"
+                          @click=${() => this.handleSendRequest(result.userId)}
+                        >
+                          Add Friend
+                        </button>
+                      `}
               </div>
             </li>
           `;
@@ -360,6 +367,24 @@ class FriendsContainer extends LitElement {
         display: block;
         min-height: 100vh;
         background: var(--app-white);
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 40px;
+        background-color: var(--app-primary-color);
+        color: white;
+      }
+
+      header h1 {
+        color: white;
+        margin: 0;
+      }
+
+      .header-buttons {
+        display: flex;
+        gap: 12px;
       }
 
       .friends-container {
@@ -394,7 +419,7 @@ class FriendsContainer extends LitElement {
         background: white;
         padding: 24px;
         border-radius: 12px;
-        box-shadow: var(--box-shadow);
+        border: 2px solid #e5e7eb;
       }
 
       .section-header {

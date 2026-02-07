@@ -86,7 +86,7 @@ class StoreContainer extends LitElement {
 
     // Confirm purchase
     const confirmed = confirm(
-      `Purchase "${item.name}" for ${item.creditCost} credits?`
+      `Purchase "${item.name}" for ${item.creditCost} credits?`,
     );
 
     if (!confirmed) return;
@@ -131,22 +131,7 @@ class StoreContainer extends LitElement {
   }
 
   renderHeader() {
-    return html`
-      <header>
-        <div class="header-content">
-          <h1>Shop</h1>
-          <div class="user-info">
-            <div class="credits-display">
-              <span class="credits-label">Your Credits:</span>
-              <span class="credits-value">${this.user?.credits || 0}</span>
-            </div>
-            <button @click=${this.handleBackToDashboard}>
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
-      </header>
-    `;
+    return html``;
   }
 
   renderFilters() {
@@ -159,7 +144,7 @@ class StoreContainer extends LitElement {
     ];
 
     const availableFilters = filters.filter(
-      (filter) => this.getItemTypeCount(filter.type) > 0
+      (filter) => this.getItemTypeCount(filter.type) > 0,
     );
 
     return html`
@@ -177,7 +162,7 @@ class StoreContainer extends LitElement {
                 >${this.getItemTypeCount(filter.type)}</span
               >
             </button>
-          `
+          `,
         )}
       </div>
     `;
@@ -214,7 +199,7 @@ class StoreContainer extends LitElement {
               .disabled=${this.isPurchasing}
               @purchase-item=${this.handlePurchaseItem}
             ></shop-item-card>
-          `
+          `,
         )}
       </div>
     `;
@@ -251,7 +236,7 @@ class StoreContainer extends LitElement {
               <h3>${item.name}</h3>
               <p>${item.description}</p>
             </div>
-          `
+          `,
         )}
       </div>
     `;

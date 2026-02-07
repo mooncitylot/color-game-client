@@ -1,29 +1,22 @@
-import { LitElement, html, css } from 'lit'
-import globalStyles from '../../styles/global-styles.js'
-import { go } from '../../router/router-mixin.js'
-import { routes } from '../../router/routes.js'
-import '../../shared/components/color-scanner.js'
+import { LitElement, html, css } from "lit";
+import globalStyles from "../../styles/global-styles.js";
+import { go } from "../../router/router-mixin.js";
+import { routes } from "../../router/routes.js";
+import "../../shared/components/color-scanner.js";
 
 class ScannerContainer extends LitElement {
   render() {
     return html`
       <div class="scanner-page">
-        <header>
-          <button class="back-button" @click=${this.handleBack}>
-            ← Back to Dashboard
-          </button>
-          <h1>Color Scanner</h1>
-        </header>
-
         <div class="content">
           <color-scanner></color-scanner>
         </div>
       </div>
-    `
+    `;
   }
 
   handleBack() {
-    go(routes.DASHBOARD.path)
+    go(routes.DASHBOARD.path);
   }
 
   static styles = [
@@ -94,8 +87,8 @@ class ScannerContainer extends LitElement {
         }
       }
     `,
-  ]
+  ];
 }
 
-customElements.define('scanner-container', ScannerContainer)
-export default ScannerContainer
+customElements.define("scanner-container", ScannerContainer);
+export default ScannerContainer;

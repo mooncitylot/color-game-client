@@ -1,12 +1,14 @@
 import { LitElement, html, css } from "lit";
 import routerMixin from "./router/router-mixin.js";
 import globalStyles from "./styles/global-styles.js";
+import "../src/shared/components/nav-bar.js";
 
 class AppEnterElement extends routerMixin(LitElement) {
   render() {
     return html`
       ${this.showHeader ? html` <header></header> ` : null}
       <slot></slot>
+      <nav-bar></nav-bar>
     `;
   }
 

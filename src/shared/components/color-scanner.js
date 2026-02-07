@@ -21,6 +21,7 @@ class ColorScanner extends LitElement {
     gameComplete: { type: Boolean },
     previewColor: { type: Object },
     showingPreview: { type: Boolean },
+    cameraReady: { type: Boolean },
   };
 
   constructor() {
@@ -37,6 +38,9 @@ class ColorScanner extends LitElement {
     this.gameComplete = false;
     this.previewColor = null;
     this.showingPreview = false;
+    this.animationFrame = 0;
+    this.cameraReady = false;
+    this.animationId = null;
   }
 
   async connectedCallback() {
@@ -47,6 +51,7 @@ class ColorScanner extends LitElement {
     if (!this.gameComplete) {
       requestAnimationFrame(() => {
         this.initCamera();
+        this.startAnimation();
       });
     }
   }
@@ -104,11 +109,20 @@ class ColorScanner extends LitElement {
       .getUserMedia(constraints)
       .then((stream) => {
         this.video.srcObject = stream;
+        
+        // Wait for video to actually start playing
+        this.video.addEventListener('loadedmetadata', () => {
+          this.video.play().then(() => {
+            this.cameraReady = true;
+            this.requestUpdate();
+          });
+        });
       })
       .catch((error) => {
         console.error("Error accessing camera:", error);
         this.message = "Camera access denied or unavailable";
         this.messageType = "error";
+        this.cameraReady = true; // Show error state
       });
   }
 
@@ -116,29 +130,94 @@ class ColorScanner extends LitElement {
     const canvas = this.shadowRoot.getElementById("canvasOverlay");
     if (!canvas) return;
 
+    // Set canvas dimensions to match its display size
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+
     const context = canvas.getContext("2d");
     context.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Add a circle overlay at the center
+    // Increment animation frame
+    this.animationFrame += 0.05;
+
+    // Add a pulsing circle overlay at the center
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
-    const radius = 30;
+    const baseRadius = 25;
+    const pulseAmount = Math.sin(this.animationFrame) * 3;
+    const radius = baseRadius + pulseAmount;
 
+    // Outer glow circle
+    context.beginPath();
+    context.arc(centerX, centerY, radius + 8, 0, 2 * Math.PI, false);
+    context.lineWidth = 2;
+    context.strokeStyle = "rgba(255, 255, 255, 0.3)";
+    context.stroke();
+
+    // Main circle
     context.beginPath();
     context.arc(centerX, centerY, radius, 0, 2 * Math.PI, false);
-    context.lineWidth = 4;
+    context.lineWidth = 3;
     context.strokeStyle = "white";
     context.stroke();
 
-    // Add crosshair
-    context.beginPath();
-    context.moveTo(centerX - 10, centerY);
-    context.lineTo(centerX + 10, centerY);
-    context.moveTo(centerX, centerY - 10);
-    context.lineTo(centerX, centerY + 10);
+    // Draw rounded corner markers instead of crosshair
+    const markerOffset = radius + 8;
+    const markerLength = 12;
+    const markerThickness = 3;
+    
     context.strokeStyle = "white";
-    context.lineWidth = 2;
+    context.lineWidth = markerThickness;
+    context.lineCap = "round";
+
+    // Top marker
+    context.beginPath();
+    context.moveTo(centerX, centerY - markerOffset);
+    context.lineTo(centerX, centerY - markerOffset - markerLength);
     context.stroke();
+
+    // Bottom marker
+    context.beginPath();
+    context.moveTo(centerX, centerY + markerOffset);
+    context.lineTo(centerX, centerY + markerOffset + markerLength);
+    context.stroke();
+
+    // Left marker
+    context.beginPath();
+    context.moveTo(centerX - markerOffset, centerY);
+    context.lineTo(centerX - markerOffset - markerLength, centerY);
+    context.stroke();
+
+    // Right marker
+    context.beginPath();
+    context.moveTo(centerX + markerOffset, centerY);
+    context.lineTo(centerX + markerOffset + markerLength, centerY);
+    context.stroke();
+
+    // Center dot with pulse
+    const dotRadius = 3 + Math.sin(this.animationFrame * 2) * 1;
+    context.beginPath();
+    context.arc(centerX, centerY, dotRadius, 0, 2 * Math.PI, false);
+    context.fillStyle = "rgba(255, 255, 255, 0.9)";
+    context.fill();
+  }
+
+  startAnimation() {
+    const animate = () => {
+      if (!this.gameComplete) {
+        this.drawCircle();
+        this.animationId = requestAnimationFrame(animate);
+      }
+    };
+    animate();
+  }
+
+  stopAnimation() {
+    if (this.animationId) {
+      cancelAnimationFrame(this.animationId);
+      this.animationId = null;
+    }
   }
 
   captureImage() {
@@ -215,7 +294,6 @@ class ColorScanner extends LitElement {
         this.stopCameraStream();
       }
 
-
       this.requestUpdate();
     } catch (error) {
       console.error("Error submitting score:", error);
@@ -229,7 +307,7 @@ class ColorScanner extends LitElement {
   getBestAttempt() {
     if (this.attempts.length === 0) return null;
     return this.attempts.reduce((best, current) =>
-      current.score > best.score ? current : best
+      current.score > best.score ? current : best,
     );
   }
 
@@ -237,7 +315,7 @@ class ColorScanner extends LitElement {
     if (this.attempts.length === 0) return 0;
     const sum = this.attempts.reduce(
       (total, attempt) => total + attempt.score,
-      0
+      0,
     );
     return Math.round(sum / this.attempts.length);
   }
@@ -250,12 +328,14 @@ class ColorScanner extends LitElement {
     this.message = "";
     this.messageType = "";
     this.isLoading = true;
+    this.cameraReady = false;
 
     await this.loadGameState();
 
     if (!this.gameComplete) {
       requestAnimationFrame(() => {
         this.initCamera();
+        this.startAnimation();
       });
     }
   }
@@ -263,6 +343,7 @@ class ColorScanner extends LitElement {
   disconnectedCallback() {
     super.disconnectedCallback();
     this.stopCameraStream();
+    this.stopAnimation();
   }
 
   render() {
@@ -288,15 +369,16 @@ class ColorScanner extends LitElement {
     return html`
       ${this.gameComplete
         ? this.renderResults()
-        : this.showingPreview
-        ? this.renderPreview()
-        : this.renderScanner()}
+        : html`
+            ${this.renderScanner()}
+            ${this.showingPreview ? this.renderPreview() : ""}
+          `}
     `;
   }
 
   renderScanner() {
     return html`
-      <div class="scanner-wrapper">
+      <div class="scanner-wrapper" style="${this.showingPreview ? 'display: none;' : ''}">
         <div class="instructions-card">
           <h3>Daily Color Challenge</h3>
           <p>Try to find and capture the mystery color of the day!</p>
@@ -315,11 +397,19 @@ class ColorScanner extends LitElement {
           </p>
 
           <div class="video-container">
+            ${!this.cameraReady
+              ? html`
+                  <div class="camera-loading">
+                    <div class="camera-loading-spinner"></div>
+                    <p>Starting camera...</p>
+                  </div>
+                `
+              : ""}
             <video id="cameraFeed" autoplay playsinline></video>
             <canvas id="canvasOverlay"></canvas>
           </div>
 
-          <button class="capture-button" @click=${this.captureImage}>
+          <button class="capture-button" @click=${this.captureImage} ?disabled=${!this.cameraReady}>
             Capture Color (${this.currentAttempt + 1}/${this.maxAttempts})
           </button>
         </div>
@@ -411,7 +501,7 @@ class ColorScanner extends LitElement {
                   <span class="attempt-score">${attempt.score}%</span>
                 </div>
               </div>
-            `
+            `,
           )}
         </div>
       </div>
@@ -425,8 +515,8 @@ class ColorScanner extends LitElement {
       bestAttempt.score >= 80
         ? "excellent"
         : bestAttempt.score >= 60
-        ? "good"
-        : "poor";
+          ? "good"
+          : "poor";
 
     return html`
       <div class="result-wrapper">
@@ -480,7 +570,7 @@ class ColorScanner extends LitElement {
                     ? html`<span class="best-badge">Best</span>`
                     : ""}
                 </div>
-              `
+              `,
             )}
           </div>
         </div>
@@ -504,12 +594,7 @@ class ColorScanner extends LitElement {
     `;
   }
 
-  updated(changedProperties) {
-    super.updated(changedProperties);
-    if (!this.gameComplete) {
-      requestAnimationFrame(() => this.drawCircle());
-    }
-  }
+
 
   static styles = [
     globalStyles,
@@ -724,6 +809,43 @@ class ColorScanner extends LitElement {
         border-radius: 16px;
         overflow: hidden;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        background: #1f2937;
+      }
+
+      .camera-loading {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #1f2937;
+        z-index: 10;
+        gap: 16px;
+      }
+
+      .camera-loading p {
+        color: white;
+        margin: 0;
+        font-size: 14px;
+      }
+
+      .camera-loading-spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
       }
 
       video {
@@ -757,13 +879,19 @@ class ColorScanner extends LitElement {
         max-width: 320px;
       }
 
-      .capture-button:hover {
+      .capture-button:hover:not(:disabled) {
         transform: translateY(-2px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
       }
 
-      .capture-button:active {
+      .capture-button:active:not(:disabled) {
         transform: translateY(0);
+      }
+
+      .capture-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: #9ca3af;
       }
 
       .attempts-section h4,

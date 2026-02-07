@@ -133,7 +133,7 @@ class DashboardContainer extends LitElement {
    */
   getAvailablePowerups() {
     return this.userInventory.filter(
-      (invItem) => invItem.item.itemType === "powerup" && invItem.quantity > 0
+      (invItem) => invItem.item.itemType === "powerup" && invItem.quantity > 0,
     );
   }
 
@@ -146,7 +146,7 @@ class DashboardContainer extends LitElement {
       return null;
     }
     return this.scoreHistory.attempts.reduce((best, current) =>
-      current.score > best.score ? current : best
+      current.score > best.score ? current : best,
     );
   }
 
@@ -181,7 +181,7 @@ class DashboardContainer extends LitElement {
                   ${this.isUsingPowerup ? "Using..." : "Use"}
                 </button>
               </div>
-            `
+            `,
           )}
         </div>
       </div>
@@ -191,24 +191,12 @@ class DashboardContainer extends LitElement {
   render() {
     return html`
       <div class="dashboard">
-        <header>
-          <h1>Color Game Dashboard</h1>
-          <div class="header-buttons">
-            ${this.user?.kind === "admin"
-              ? html`<button @click=${this.handleGoToAdmin}>
-                  Admin Panel
-                </button>`
-              : ""}
-            <button @click=${this.handleLogout}>Logout</button>
-          </div>
-        </header>
-
         <div class="content">
           ${this.user
             ? html`
                 <div class="welcome-card">
                   <h2>Welcome, ${this.user.username}!</h2>
-                  <p>Match today's color to earn points!</p>
+                  <p>Uncover today's color to earn points!</p>
                 </div>
 
                 ${this.powerupMessage
@@ -309,8 +297,8 @@ class DashboardContainer extends LitElement {
                     class="score-badge ${bestScore >= 80
                       ? "excellent"
                       : bestScore >= 60
-                      ? "good"
-                      : "poor"}"
+                        ? "good"
+                        : "poor"}"
                   >
                     ${bestScore}
                   </div>
@@ -344,8 +332,8 @@ class DashboardContainer extends LitElement {
                   class="score-badge ${bestScore >= 80
                     ? "excellent"
                     : bestScore >= 60
-                    ? "good"
-                    : "poor"}"
+                      ? "good"
+                      : "poor"}"
                 >
                   ${bestScore}
                 </div>
@@ -384,7 +372,7 @@ class DashboardContainer extends LitElement {
                 ? html`<span class="best-badge-small">Best</span>`
                 : ""}
             </div>
-          `
+          `,
         )}
       </div>
     `;
@@ -413,7 +401,6 @@ class DashboardContainer extends LitElement {
         padding: 20px 40px;
         background-color: var(--app-primary-color);
         color: white;
-        box-shadow: var(--box-shadow);
       }
 
       header h1 {
@@ -443,8 +430,8 @@ class DashboardContainer extends LitElement {
         background: white;
         padding: 24px;
         border-radius: 8px;
-        box-shadow: var(--box-shadow);
         text-align: center;
+        border: 2px solid #e5e7eb;
       }
 
       .stat-card.clickable {
@@ -454,7 +441,6 @@ class DashboardContainer extends LitElement {
 
       .stat-card.clickable:hover {
         transform: translateY(-4px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
         background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
       }
 
@@ -494,7 +480,7 @@ class DashboardContainer extends LitElement {
         padding: 24px;
         margin-bottom: 24px;
         border-radius: 8px;
-        box-shadow: var(--box-shadow);
+        border: 2px solid #e5e7eb;
       }
 
       .powerup-message {
@@ -544,7 +530,6 @@ class DashboardContainer extends LitElement {
 
       .powerup-item:hover {
         border-color: var(--app-primary-color);
-        box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
       }
 
       .powerup-info {
@@ -586,7 +571,6 @@ class DashboardContainer extends LitElement {
       .use-powerup-button:hover:not(:disabled) {
         background-color: #059669;
         transform: translateY(-2px);
-        box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
       }
 
       .use-powerup-button:disabled {
@@ -667,13 +651,11 @@ class DashboardContainer extends LitElement {
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
         min-width: 250px;
       }
 
       .scan-button:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
       }
 
       .scan-button.secondary {
@@ -716,7 +698,6 @@ class DashboardContainer extends LitElement {
         width: 50px;
         height: 50px;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         flex-shrink: 0;
       }
 
@@ -756,7 +737,7 @@ class DashboardContainer extends LitElement {
         padding: 24px;
         margin-bottom: 24px;
         border-radius: 8px;
-        box-shadow: var(--box-shadow);
+        border: 2px solid #e5e7eb;
       }
 
       .welcome-card h2 {
