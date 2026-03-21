@@ -31,7 +31,7 @@ function setEnvDefaults({ mode }) {
 export default (env, { mode }) => {
   setEnvDefaults({ mode })
 
-  let publicPath = mode === 'development' ? `https://localhost:${process.env.DEV_PORT}/` : process.env.APP_URL
+  let publicPath = mode === 'development' ? `https://localhost:${process.env.DEV_PORT}/` : `${process.env.APP_URL}/`
 
   console.log(`
     ***********************
