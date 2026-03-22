@@ -1,6 +1,7 @@
 import { getUserToken, clearSession } from "../session/session.js";
 import { go } from "../router/router-mixin.js";
 import { routes } from "../router/routes.js";
+import { tryRefreshAccessToken } from "./auth-refresh.js";
 
 const DEFAULT_API = process.env.API_URL;
 
@@ -23,46 +24,74 @@ function handleUnauthorized() {
   }
 }
 
-export async function apiFetch(path, method, body = null, API = DEFAULT_API) {
+/**
+ * @param {boolean} canRefresh
+ */
+async function apiFetchOnce(path, method, body, API, canRefresh) {
+  const token = getUserToken();
+  const headers = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  };
+  if (token && String(token).trim()) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
   const options = {
     method,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Content-Type": "application/json",
-      Accept: "application/json",
-      Authorization: `Bearer ${getUserToken() || ""}`,
-    },
-    credentials: "include", // Include cookies in requests
+    headers,
+    credentials: "include",
   };
 
-  if (body) options["body"] = JSON.stringify(body);
+  if (body) options.body = JSON.stringify(body);
 
   const res = await fetch(API + path, options);
-  if (res.ok) {
-    return res;
-  } else {
-    // Handle 401 Unauthorized - token expired or invalid
-    if (res.status === 401) {
-      handleUnauthorized();
-    }
 
-    // Try to parse error response, but handle empty responses
-    let errorMessage = res.statusText;
-    try {
-      const text = await res.text();
-      if (text) {
-        const errorData = JSON.parse(text);
-        // API returns 'description' field in error responses
-        errorMessage =
-          errorData.description || errorData.message || errorMessage;
-      }
-    } catch (e) {
-      // Ignore JSON parse errors for error responses
-    }
+  if (res.ok) return res;
 
-    throw {
-      message: errorMessage,
-      res,
-    };
+  if (
+    res.status === 401 &&
+    canRefresh &&
+    shouldAttemptRefresh(path)
+  ) {
+    const refreshed = await tryRefreshAccessToken();
+    if (refreshed) {
+      return apiFetchOnce(path, method, body, API, false);
+    }
   }
+
+  if (res.status === 401) {
+    handleUnauthorized();
+  }
+
+  let errorMessage = res.statusText;
+  try {
+    const text = await res.text();
+    if (text) {
+      const errorData = JSON.parse(text);
+      errorMessage =
+        errorData.description || errorData.message || errorMessage;
+    }
+  } catch {
+    // ignore
+  }
+
+  throw {
+    message: errorMessage,
+    res,
+  };
+}
+
+/**
+ * @param {string} path
+ */
+function shouldAttemptRefresh(path) {
+  if (path.includes("/v1/auth/login")) return false;
+  if (path.includes("/v1/auth/refresh")) return false;
+  if (path.includes("/v1/auth/signup")) return false;
+  return true;
+}
+
+export async function apiFetch(path, method, body = null, API = DEFAULT_API) {
+  return apiFetchOnce(path, method, body, API, true);
 }
