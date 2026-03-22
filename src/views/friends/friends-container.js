@@ -368,25 +368,6 @@ class FriendsContainer extends LitElement {
         min-height: 100vh;
         background: var(--app-white);
       }
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background-color: var(--app-primary-color);
-        color: white;
-      }
-
-      header h1 {
-        color: white;
-        margin: 0;
-      }
-
-      .header-buttons {
-        display: flex;
-        gap: 12px;
-      }
-
       .friends-container {
         max-width: 1200px;
         margin: 0 auto;

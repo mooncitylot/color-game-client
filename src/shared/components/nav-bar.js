@@ -12,28 +12,17 @@ import {
 class NavBar extends LitElement {
   static properties = {
     currentPath: { type: String },
-    isCollapsed: { type: Boolean },
   };
 
   constructor() {
     super();
     this.currentPath = window.location.pathname;
-    this.isCollapsed = false;
   }
 
   connectedCallback() {
     super.connectedCallback();
     window.addEventListener("route-change", () => this.handleRouteChange());
     window.addEventListener("popstate", () => this.handleRouteChange());
-
-    // Auto-collapse after 2 seconds
-    setTimeout(() => {
-      this.isCollapsed = true;
-    }, 1000);
-  }
-
-  toggleCollapse() {
-    this.isCollapsed = !this.isCollapsed;
   }
 
   disconnectedCallback() {
@@ -44,17 +33,11 @@ class NavBar extends LitElement {
 
   handleRouteChange() {
     this.currentPath = window.location.pathname;
-    setTimeout(() => {
-      this.isCollapsed = true;
-    }, 500);
   }
 
   render() {
     return html`
-      <nav class="nav-bar ${this.isCollapsed ? "collapsed" : "expanded"}">
-        <button class="toggle-button" @click="${this.toggleCollapse}">
-          <span class="toggle-icon">${this.isCollapsed ? "▲" : "▼"}</span>
-        </button>
+      <nav class="nav-bar">
         <div class="nav-content">
           <div class="nav-links">
             <a
@@ -110,44 +93,6 @@ class NavBar extends LitElement {
         color: white;
         padding: 10px 20px;
         box-shadow: var(--box-shadow);
-        transition: transform 0.3s ease-in-out;
-        transform: translateY(0);
-      }
-
-      .nav-bar.collapsed {
-        transform: translateY(100%);
-      }
-
-      .nav-bar.expanded {
-        transform: translateY(0);
-      }
-
-      .toggle-button {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        position: absolute;
-        bottom: 80px;
-        left: 32px;
-        transform: translateX(-50%);
-        background-color: var(--app-primary-color);
-        width: 40px;
-        height: 40px;
-        border: none;
-        color: white;
-        cursor: pointer;
-        border-radius: 50px;
-        box-shadow: var(--box-shadow);
-        transition: all 0.2s ease;
-      }
-
-      .toggle-button:hover {
-        opacity: 0.8;
-      }
-
-      .toggle-icon {
-        font-size: 14px;
-        display: block;
       }
 
       .nav-content {
@@ -180,7 +125,7 @@ class NavBar extends LitElement {
       }
 
       .nav-links a.active {
-        fill: #e59861;
+        fill: white;
       }
     `,
   ];

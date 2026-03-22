@@ -35,22 +35,6 @@ class ScannerContainer extends LitElement {
         min-height: 100vh;
       }
 
-      header {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        padding: 20px 40px;
-        background-color: var(--app-primary-color);
-        color: white;
-        box-shadow: var(--box-shadow);
-      }
-
-      header h1 {
-        color: white;
-        margin: 0;
-        font-size: 24px;
-      }
-
       .back-button {
         background: rgba(255, 255, 255, 0.2);
         color: white;

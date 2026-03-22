@@ -109,9 +109,9 @@ class ColorScanner extends LitElement {
       .getUserMedia(constraints)
       .then((stream) => {
         this.video.srcObject = stream;
-        
+
         // Wait for video to actually start playing
-        this.video.addEventListener('loadedmetadata', () => {
+        this.video.addEventListener("loadedmetadata", () => {
           this.video.play().then(() => {
             this.cameraReady = true;
             this.requestUpdate();
@@ -166,7 +166,7 @@ class ColorScanner extends LitElement {
     const markerOffset = radius + 8;
     const markerLength = 12;
     const markerThickness = 3;
-    
+
     context.strokeStyle = "white";
     context.lineWidth = markerThickness;
     context.lineCap = "round";
@@ -378,7 +378,10 @@ class ColorScanner extends LitElement {
 
   renderScanner() {
     return html`
-      <div class="scanner-wrapper" style="${this.showingPreview ? 'display: none;' : ''}">
+      <div
+        class="scanner-wrapper"
+        style="${this.showingPreview ? "display: none;" : ""}"
+      >
         <div class="instructions-card">
           <h3>Daily Color Challenge</h3>
           <p>Try to find and capture the mystery color of the day!</p>
@@ -409,8 +412,12 @@ class ColorScanner extends LitElement {
             <canvas id="canvasOverlay"></canvas>
           </div>
 
-          <button class="capture-button" @click=${this.captureImage} ?disabled=${!this.cameraReady}>
-            Capture Color (${this.currentAttempt + 1}/${this.maxAttempts})
+          <button
+            class="capture-button"
+            @click=${this.captureImage}
+            ?disabled=${!this.cameraReady}
+          >
+            Zap Color (${this.currentAttempt + 1}/${this.maxAttempts})
           </button>
         </div>
 
@@ -594,8 +601,6 @@ class ColorScanner extends LitElement {
     `;
   }
 
-
-
   static styles = [
     globalStyles,
     css`
@@ -615,8 +620,8 @@ class ColorScanner extends LitElement {
         align-items: center;
         gap: 24px;
         padding: 20px;
+        margin-bottom: 80px;
       }
-
       .instructions-card,
       .reveal-card,
       .stats-section,

@@ -265,27 +265,6 @@ class StoreContainer extends LitElement {
         min-height: 100vh;
       }
 
-      header {
-        background-color: var(--app-primary-color);
-        color: white;
-        padding: 24px 40px;
-        box-shadow: var(--box-shadow);
-      }
-
-      .header-content {
-        max-width: 1400px;
-        margin: 0 auto;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-      }
-
-      header h1 {
-        color: white;
-        margin: 0;
-        font-size: 32px;
-      }
-
       .user-info {
         display: flex;
         align-items: center;

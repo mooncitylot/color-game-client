@@ -1,57 +1,58 @@
-import { LitElement, html, css } from 'lit'
-import '../../shared/components/app-error.js'
-import globalStyles from '../../styles/global-styles.js'
-import { signupUser } from '../../services/users.js'
-import { go } from '../../router/router-mixin.js'
-import { routes } from '../../router/routes.js'
+import { LitElement, html, css } from "lit";
+import "../../shared/components/app-error.js";
+import globalStyles from "../../styles/global-styles.js";
+import { signupUser } from "../../services/users.js";
+import { go } from "../../router/router-mixin.js";
+import { routes } from "../../router/routes.js";
 
 class SignupForm extends LitElement {
   static properties = {
     success: { type: Boolean },
     error: { type: String },
-  }
+  };
 
   constructor() {
-    super()
-    this.success = false
-    this.error = ''
+    super();
+    this.success = false;
+    this.error = "";
   }
 
   async handleFormSubmit(e) {
-    e.preventDefault()
-    this.error = ''
+    e.preventDefault();
+    this.error = "";
 
     try {
-      const data = Object.fromEntries(new FormData(e.target).entries())
-      data.email = data.email.toLowerCase()
-      data.username = data.username.trim()
+      const data = Object.fromEntries(new FormData(e.target).entries());
+      data.email = data.email.toLowerCase();
+      data.username = data.username.trim();
 
       // Validate username doesn't contain spaces
-      if (data.username.includes(' ')) {
-        this.error = 'Username cannot contain spaces.'
-        return
+      if (data.username.includes(" ")) {
+        this.error = "Username cannot contain spaces.";
+        return;
       }
 
       // Basic password validation
       if (data.password !== data.confirmPassword) {
-        this.error = 'Passwords do not match.'
-        return
+        this.error = "Passwords do not match.";
+        return;
       }
 
       await signupUser({
         username: data.username,
         email: data.email,
         password: data.password,
-      })
+      });
 
-      this.success = true
+      this.success = true;
     } catch (error) {
-      console.error('Signup error:', error)
+      console.error("Signup error:", error);
       // Extract error message from API response
       if (error.message) {
-        this.error = error.message
+        this.error = error.message;
       } else {
-        this.error = 'There was a problem creating your account. Please try again.'
+        this.error =
+          "There was a problem creating your account. Please try again.";
       }
     }
   }
@@ -64,21 +65,21 @@ class SignupForm extends LitElement {
           <p>Your account has been created successfully.</p>
           <button @click=${() => go(routes.LOGIN.path)}>Go to Login</button>
         </div>
-      `
+      `;
     }
 
     return html`
       <div class="signup-card">
         <h1>Create Account</h1>
-        <p>Join Color Game today!</p>
+        <p>Join ColorZap today!</p>
 
         <form @submit=${this.handleFormSubmit}>
           <label for="username">Username</label>
-          <input 
-            type="text" 
-            name="username" 
-            required 
-            minlength="3" 
+          <input
+            type="text"
+            name="username"
+            required
+            minlength="3"
             maxlength="20"
             pattern="[^\\s]+"
             title="Username cannot contain spaces"
@@ -91,17 +92,26 @@ class SignupForm extends LitElement {
           <input type="password" name="password" required minlength="8" />
 
           <label for="confirmPassword">Confirm Password</label>
-          <input type="password" name="confirmPassword" required minlength="8" />
+          <input
+            type="password"
+            name="confirmPassword"
+            required
+            minlength="8"
+          />
 
           ${this.error ? html`<app-error>${this.error}</app-error>` : null}
 
           <button type="submit">Sign Up</button>
-          <button class="secondary" type="button" @click=${() => go(routes.LOGIN.path)}>
+          <button
+            class="secondary"
+            type="button"
+            @click=${() => go(routes.LOGIN.path)}
+          >
             Back to Login
           </button>
         </form>
       </div>
-    `
+    `;
   }
 
   static styles = [
@@ -137,8 +147,8 @@ class SignupForm extends LitElement {
         margin-top: 8px;
       }
     `,
-  ]
+  ];
 }
 
-customElements.define('signup-form', SignupForm)
-export default SignupForm
+customElements.define("signup-form", SignupForm);
+export default SignupForm;

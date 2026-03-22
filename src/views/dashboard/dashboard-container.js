@@ -59,8 +59,6 @@ class DashboardContainer extends LitElement {
       this.isLoadingHistory = false;
       this.dailyChallenge = dailyChallenge;
       this.userInventory = inventory || [];
-      console.log("dailyChallenge", this.dailyChallenge);
-      console.log("userInventory", this.userInventory);
     } catch (error) {
       console.error(error);
       this.isLoadingHistory = false;
@@ -276,7 +274,7 @@ class DashboardContainer extends LitElement {
             mystery color.
           </p>
           <button class="scan-button" @click=${this.handleGoToScanner}>
-            Start Scanning
+            Start Zapping
           </button>
         </div>
       `;
@@ -341,7 +339,7 @@ class DashboardContainer extends LitElement {
             `
           : ""}
         <button class="scan-button" @click=${this.handleGoToScanner}>
-          Continue Scanning
+          Continue Zapping
         </button>
       </div>
     `;
@@ -362,10 +360,6 @@ class DashboardContainer extends LitElement {
                 style="background-color: rgb(${attempt.submitted_color_r}, ${attempt.submitted_color_g}, ${attempt.submitted_color_b})"
               ></div>
               <div class="attempt-details">
-                <span class="attempt-rgb">
-                  RGB(${attempt.submitted_color_r},
-                  ${attempt.submitted_color_g}, ${attempt.submitted_color_b})
-                </span>
                 <span class="attempt-score">Score: ${attempt.score}%</span>
               </div>
               ${attempt === bestAttempt
@@ -394,29 +388,11 @@ class DashboardContainer extends LitElement {
         height: 100%;
       }
 
-      header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 20px 40px;
-        background-color: var(--app-primary-color);
-        color: white;
-      }
-
-      header h1 {
-        color: white;
-        margin: 0;
-      }
-
-      .header-buttons {
-        display: flex;
-        gap: 12px;
-      }
-
       .content {
         flex: 1;
         padding: 40px;
         overflow-y: auto;
+        margin-bottom: 80px;
       }
 
       .stats-grid {
@@ -612,6 +588,7 @@ class DashboardContainer extends LitElement {
       }
 
       .best-attempt-preview {
+        width: 100%;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -642,6 +619,7 @@ class DashboardContainer extends LitElement {
       }
 
       .scan-button {
+        width: 100%;
         background-color: var(--app-primary-color);
         color: white;
         border: none;
@@ -651,7 +629,6 @@ class DashboardContainer extends LitElement {
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
-        min-width: 250px;
       }
 
       .scan-button:hover {
