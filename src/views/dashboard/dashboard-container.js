@@ -8,6 +8,7 @@ import { go } from "../../router/router-mixin.js";
 import { routes } from "../../router/routes.js";
 import { getDailyColor } from "../../services/colors.js";
 import { getUserInventory, useItem } from "../../services/shop.js";
+import { winnerIcon } from "../../shared/assets/icons.js";
 
 class DashboardContainer extends LitElement {
   static properties = {
@@ -290,6 +291,7 @@ class DashboardContainer extends LitElement {
           ${bestAttempt
             ? html`
                 <div class="best-attempt-preview">
+                  ${winnerIcon}
                   <span>Your Best Score:</span>
                   <div
                     class="score-badge ${bestScore >= 80
@@ -363,7 +365,7 @@ class DashboardContainer extends LitElement {
                 <span class="attempt-score">Score: ${attempt.score}%</span>
               </div>
               ${attempt === bestAttempt
-                ? html`<span class="best-badge-small">Best</span>`
+                ? html`<span class="best-badge-small">${winnerIcon}</span>`
                 : ""}
             </div>
           `,
@@ -705,6 +707,11 @@ class DashboardContainer extends LitElement {
         font-size: 12px;
         font-weight: bold;
         text-transform: uppercase;
+      }
+      .best-badge-small svg {
+        width: 24px;
+        height: 24px;
+        fill: white;
       }
 
       .welcome-card,

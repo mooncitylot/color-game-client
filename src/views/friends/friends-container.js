@@ -154,7 +154,7 @@ class FriendsContainer extends LitElement {
 
         <div class="content-grid">
           <section class="search-card">
-            <h2>Find Players</h2>
+            <h2>Find a Friend</h2>
             <form @submit=${this.handleSearch}>
               <label for="friend-search">Search by username</label>
               <input
@@ -370,7 +370,6 @@ class FriendsContainer extends LitElement {
       }
       .friends-container {
         max-width: 1200px;
-        margin: 0 auto;
         padding: 32px;
         display: flex;
         flex-direction: column;
