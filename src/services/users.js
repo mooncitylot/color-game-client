@@ -1,4 +1,5 @@
 import { apiFetch } from "./api-fetch.js";
+import { isAuthenticated } from "../session/session.js";
 
 export function signupUser(user) {
   return apiFetch(`/v1/auth/signup`, "POST", user).then(async (r) => {
@@ -30,6 +31,7 @@ export function getCurrentUser() {
  * @returns {Promise<boolean>}
  */
 export async function checkAuthStatus() {
+  if (!isAuthenticated()) return false;
   try {
     await getCurrentUser();
     return true;

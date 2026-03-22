@@ -43,6 +43,22 @@ export function getUserToken() {
   return window.sessionStorage.getItem(sessionVariables.USER_TOKEN)
 }
 
+/**
+ * Auth is via Bearer token in sessionStorage and/or HttpOnly cookies (see API login).
+ * When the API only sets cookies, there is no token string — we treat a cached user
+ * from a successful /v1/users/me as authenticated until cleared or the API returns 401.
+ * @returns {boolean}
+ */
+export function isAuthenticated() {
+  const token = getUserToken()
+  if (token && String(token).trim()) {
+    const expiration = getSessionExpiration()
+    if (!expiration) return true
+    return new Date(expiration).getTime() >= new Date().getTime()
+  }
+  return !!getSessionUser()
+}
+
 export function sessionIsExpired() {
   const expiration = getSessionExpiration()
   if (!expiration) return true

@@ -1,21 +1,20 @@
-import { LitElement, html, css } from 'lit'
-import globalStyles from '../../styles/global-styles.js'
-import './login-form.js'
-import routes from '../../router/routes.js'
-import { go } from '../../router/router-mixin.js'
-import { clearSession, getSessionUser, sessionIsExpired } from '../../session/session.js'
+import { LitElement, html, css } from "lit";
+import globalStyles from "../../styles/global-styles.js";
+import "./login-form.js";
+import routes from "../../router/routes.js";
+import { go } from "../../router/router-mixin.js";
+import { clearSession, isAuthenticated } from "../../session/session.js";
 
 class LoginContainerElement extends LitElement {
   routeEnter() {
-    if (!sessionIsExpired()) {
-      const user = getSessionUser()
-      if (user) return go(routes.DASHBOARD.path)
+    if (isAuthenticated()) {
+      return go(routes.DASHBOARD.path);
     }
-    clearSession()
+    clearSession();
   }
 
   render() {
-    return html`<login-form></login-form>`
+    return html`<login-form></login-form>`;
   }
 
   static styles = [
@@ -29,8 +28,8 @@ class LoginContainerElement extends LitElement {
         background-color: var(--app-white);
       }
     `,
-  ]
+  ];
 }
 
-customElements.define('login-container', LoginContainerElement)
-export default LoginContainerElement
+customElements.define("login-container", LoginContainerElement);
+export default LoginContainerElement;
