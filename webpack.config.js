@@ -1,5 +1,6 @@
 import webpack from 'webpack'
 import HtmlWebpackPlugin from 'html-webpack-plugin'
+import CopyWebpackPlugin from 'copy-webpack-plugin'
 import { CleanWebpackPlugin } from 'clean-webpack-plugin'
 import path from 'path'
 import { fileURLToPath } from 'url'
@@ -76,6 +77,9 @@ export default (env, { mode }) => {
       }),
       new HtmlWebpackPlugin({
         template: 'index.html',
+      }),
+      new CopyWebpackPlugin({
+        patterns: [{ from: 'public', to: '.', noErrorOnMissing: true }],
       }),
     ],
   }
