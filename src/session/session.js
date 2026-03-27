@@ -4,6 +4,26 @@ const sessionVariables = {
   SESSION_EXPIRATION: 'sessionExpiration',
 }
 
+/** @type {Storage} */
+const authStorage = window.localStorage
+
+function migrateSessionFromSessionStorageIfNeeded() {
+  if (
+    authStorage.getItem(sessionVariables.USER_TOKEN) ||
+    authStorage.getItem(sessionVariables.USER)
+  ) {
+    return
+  }
+  Object.values(sessionVariables).forEach((key) => {
+    const value = window.sessionStorage.getItem(key)
+    if (value === null) return
+    authStorage.setItem(key, value)
+    window.sessionStorage.removeItem(key)
+  })
+}
+
+migrateSessionFromSessionStorageIfNeeded()
+
 export function setSessionData({ expiry, user, token }) {
   setSessionExpiration(expiry)
   setUserToken(token)
@@ -23,28 +43,28 @@ export function setSessionUser(user) {
     level: user.level || 1,
     credits: user.credits || 0,
   }
-  return window.sessionStorage.setItem(sessionVariables.USER, JSON.stringify(sessionUser))
+  return authStorage.setItem(sessionVariables.USER, JSON.stringify(sessionUser))
 }
 
 export function getSessionUser() {
-  const user = window.sessionStorage.getItem(sessionVariables.USER)
+  const user = authStorage.getItem(sessionVariables.USER)
   return user ? JSON.parse(user) : null
 }
 
 export function clearSession() {
-  window.sessionStorage.clear()
+  Object.values(sessionVariables).forEach((key) => authStorage.removeItem(key))
 }
 
 export function setUserToken(token) {
-  return window.sessionStorage.setItem(sessionVariables.USER_TOKEN, token)
+  return authStorage.setItem(sessionVariables.USER_TOKEN, token)
 }
 
 export function getUserToken() {
-  return window.sessionStorage.getItem(sessionVariables.USER_TOKEN)
+  return authStorage.getItem(sessionVariables.USER_TOKEN)
 }
 
 /**
- * Auth is via Bearer token in sessionStorage and/or HttpOnly cookies (see API login).
+ * Auth is via Bearer token in localStorage and/or HttpOnly cookies (see API login).
  * When the API only sets cookies, there is no token string — we treat a cached user
  * from a successful /v1/users/me as authenticated until cleared or the API returns 401.
  * @returns {boolean}
@@ -66,9 +86,9 @@ export function sessionIsExpired() {
 }
 
 export function setSessionExpiration(expiry) {
-  return window.sessionStorage.setItem(sessionVariables.SESSION_EXPIRATION, expiry)
+  return authStorage.setItem(sessionVariables.SESSION_EXPIRATION, expiry)
 }
 
 export function getSessionExpiration() {
-  return window.sessionStorage.getItem(sessionVariables.SESSION_EXPIRATION)
+  return authStorage.getItem(sessionVariables.SESSION_EXPIRATION)
 }
