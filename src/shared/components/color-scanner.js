@@ -6,6 +6,8 @@ import {
 } from "../../services/colors.js";
 import globalStyles from "../../styles/global-styles.js";
 import "../../shared/components/loading-spinner.js";
+import { getSessionUser } from "../../session/session.js";
+import { removeUserEffect } from "../../services/effects.js";
 
 class ColorScanner extends LitElement {
   static properties = {
@@ -22,6 +24,8 @@ class ColorScanner extends LitElement {
     previewColor: { type: Object },
     showingPreview: { type: Boolean },
     cameraReady: { type: Boolean },
+    effects: { type: Object },
+    turdMode: { type: Boolean },
   };
 
   constructor() {
@@ -41,11 +45,19 @@ class ColorScanner extends LitElement {
     this.animationFrame = 0;
     this.cameraReady = false;
     this.animationId = null;
+    this.effects = [];
+    this.turdMode = false;
   }
 
   async connectedCallback() {
     super.connectedCallback();
     await this.loadGameState();
+
+    this.effects = getSessionUser().userEffect;
+    console.log("effects", this.effects);
+
+    this.applyUserEffects();
+    await this.removeThrowTurdEffectIfDayComplete();
 
     // Only init camera if game is not complete
     if (!this.gameComplete) {
@@ -53,6 +65,42 @@ class ColorScanner extends LitElement {
         this.initCamera();
         this.startAnimation();
       });
+    }
+  }
+
+  applyUserEffects() {
+    if (!this.effects) return;
+
+    const normalizedEffects =
+      typeof this.effects === "string"
+        ? JSON.parse(this.effects)
+        : this.effects;
+
+    this.effects = normalizedEffects;
+    this.turdMode = normalizedEffects?.code === "throw_turd";
+    console.log("turd mode?", this.turdMode);
+  }
+
+  /**
+   * @returns {boolean}
+   */
+  hasThrowTurdNegativeEffect() {
+    if (!this.effects) return false;
+    const e =
+      typeof this.effects === "string"
+        ? JSON.parse(this.effects)
+        : this.effects;
+    return e?.code === "throw_turd" && e?.polarity === "negative";
+  }
+
+  async removeThrowTurdEffectIfDayComplete() {
+    if (!this.gameComplete || !this.hasThrowTurdNegativeEffect()) return;
+    try {
+      await removeUserEffect();
+      this.effects = null;
+      this.turdMode = false;
+    } catch (err) {
+      console.error("Failed to clear throw_turd effect:", err);
     }
   }
 
@@ -292,6 +340,7 @@ class ColorScanner extends LitElement {
       if (response.attempts_left === 0) {
         this.gameComplete = true;
         this.stopCameraStream();
+        await this.removeThrowTurdEffectIfDayComplete();
       }
 
       this.requestUpdate();
@@ -383,8 +432,8 @@ class ColorScanner extends LitElement {
         style="${this.showingPreview ? "display: none;" : ""}"
       >
         <div class="instructions-card">
-          <h3>Daily Color Challenge</h3>
-          <p>Try to find and capture the mystery color of the day!</p>
+          <h3>Zap Target: ${this.targetColor.color_name}</h3>
+          <p>Find and zap the mystery color</p>
           <p>
             You have
             <strong>${this.maxAttempts - this.currentAttempt}</strong> attempts
@@ -395,9 +444,21 @@ class ColorScanner extends LitElement {
         ${this.attempts.length > 0 ? this.renderAttempts() : ""}
 
         <div class="camera-section">
-          <p class="instructions">
-            Point your camera at colors in your environment
-          </p>
+          ${this.effects
+            ? html`
+                <div class="message-box">
+                  <p>
+                    <strong>Effect Active</strong>
+                  </p>
+                  ${this.effects.code === "throw_turd"
+                    ? html`<p>
+                        Someone threw a turd at you... your zapper will be in
+                        turd mode for the rest of the day.
+                      </p>`
+                    : ``}
+                </div>
+              `
+            : ""}
 
           <div class="video-container">
             ${!this.cameraReady
@@ -409,6 +470,9 @@ class ColorScanner extends LitElement {
                 `
               : ""}
             <video id="cameraFeed" autoplay playsinline></video>
+            ${this.turdMode
+              ? html`<div class="turd-overlay" aria-hidden="true"></div>`
+              : ""}
             <canvas id="canvasOverlay"></canvas>
           </div>
 
@@ -655,7 +719,7 @@ class ColorScanner extends LitElement {
         width: 100%;
         height: 200px;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         margin-bottom: 24px;
       }
 
@@ -813,7 +877,7 @@ class ColorScanner extends LitElement {
         aspect-ratio: 1;
         border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         background: #1f2937;
       }
 
@@ -860,6 +924,17 @@ class ColorScanner extends LitElement {
         display: block;
       }
 
+      .turd-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 1;
+        background-color: rgba(101, 67, 33, 0.75);
+      }
+
       #canvasOverlay {
         position: absolute;
         top: 0;
@@ -867,6 +942,7 @@ class ColorScanner extends LitElement {
         width: 100%;
         height: 100%;
         pointer-events: none;
+        z-index: 2;
       }
 
       .capture-button {
@@ -879,14 +955,14 @@ class ColorScanner extends LitElement {
         border-radius: 8px;
         cursor: pointer;
         transition: all 0.3s ease;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         width: 100%;
         max-width: 320px;
       }
 
       .capture-button:hover:not(:disabled) {
         transform: translateY(-2px);
-        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
 
       .capture-button:active:not(:disabled) {
@@ -923,7 +999,7 @@ class ColorScanner extends LitElement {
         width: 80px;
         height: 80px;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
       }
 
       .attempt-info {
@@ -1011,7 +1087,7 @@ class ColorScanner extends LitElement {
         width: 40px;
         height: 40px;
         border-radius: 6px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
         flex-shrink: 0;
       }
 
@@ -1113,6 +1189,19 @@ class ColorScanner extends LitElement {
         margin: 0;
         color: #dc2626;
         font-size: 18px;
+      }
+
+      .message-box {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 16px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+        font-size: 12px;
+        color: var(--app-grey);
       }
 
       @media (max-width: 640px) {

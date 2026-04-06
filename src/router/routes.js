@@ -57,6 +57,14 @@ export const routes = {
     showNav: true,
     showHeader: true,
   },
+  PROFILE: {
+    path: "/profile",
+    componentPath: "profile/profile-container",
+    componentName: "profile-container",
+    isPublic: false,
+    showNav: true,
+    showHeader: true,
+  },
 };
 
 // Add pathRegexp to each route

@@ -84,14 +84,15 @@ export function equipItem(inventoryId, equip = true) {
 }
 
 /**
- * Use a consumable item (like powerups)
+ * Use a consumable item (like powerups). Pass targetUserId when item metadata uses effect_target "other".
  * @param {number} inventoryId - The inventory item ID
+ * @param {string} [targetUserId] - Friend to receive the effect when required
  * @returns {Promise<Object>} Result with remaining quantity
  */
-export function useItem(inventoryId) {
-  return apiFetch("/v1/inventory/use", "POST", {
-    inventoryId,
-  }).then(async (r) => {
+export function useItem(inventoryId, targetUserId = null) {
+  const body = { inventoryId };
+  if (targetUserId) body.targetUserId = targetUserId;
+  return apiFetch("/v1/inventory/use", "POST", body).then(async (r) => {
     const text = await r.text();
     return text ? JSON.parse(text) : null;
   });

@@ -7,7 +7,6 @@ import { clearSession } from "../../session/session.js";
 import { go } from "../../router/router-mixin.js";
 import { routes } from "../../router/routes.js";
 import { getDailyColor } from "../../services/colors.js";
-import { getUserInventory, useItem } from "../../services/shop.js";
 import { winnerIcon } from "../../shared/assets/icons.js";
 
 class DashboardContainer extends LitElement {
@@ -17,9 +16,6 @@ class DashboardContainer extends LitElement {
     isLoadingHistory: { type: Boolean },
     friendSummary: { type: Object },
     dailyChallenge: { type: Object },
-    userInventory: { type: Array },
-    isUsingPowerup: { type: Boolean },
-    powerupMessage: { type: String },
   };
 
   constructor() {
@@ -29,28 +25,18 @@ class DashboardContainer extends LitElement {
     this.isLoadingHistory = true;
     this.friendSummary = { friends: 0, requests: 0 };
     this.dailyChallenge = null;
-    this.userInventory = [];
-    this.isUsingPowerup = false;
-    this.powerupMessage = "";
   }
 
   async routeEnter() {
     try {
-      const [
-        user,
-        scoreHistory,
-        friendsRes,
-        requestsRes,
-        dailyChallenge,
-        inventory,
-      ] = await Promise.all([
-        getCurrentUser(),
-        getScoreHistory(),
-        getFriends(),
-        getFriendRequests(),
-        getDailyColor(),
-        getUserInventory(),
-      ]);
+      const [user, scoreHistory, friendsRes, requestsRes, dailyChallenge] =
+        await Promise.all([
+          getCurrentUser(),
+          getScoreHistory(),
+          getFriends(),
+          getFriendRequests(),
+          getDailyColor(),
+        ]);
       this.user = user;
       this.scoreHistory = scoreHistory;
       this.friendSummary = {
@@ -59,7 +45,6 @@ class DashboardContainer extends LitElement {
       };
       this.isLoadingHistory = false;
       this.dailyChallenge = dailyChallenge;
-      this.userInventory = inventory || [];
     } catch (error) {
       console.error(error);
       this.isLoadingHistory = false;
@@ -87,55 +72,6 @@ class DashboardContainer extends LitElement {
     go(routes.FRIENDS.path);
   }
 
-  /**
-   * @param {number} inventoryId
-   */
-  async handleUsePowerup(inventoryId) {
-    if (this.isUsingPowerup) return;
-
-    this.isUsingPowerup = true;
-    this.powerupMessage = "";
-
-    try {
-      const response = await useItem(inventoryId);
-
-      // Refresh user data and score history to get updated attempts
-      const [updatedScoreHistory, updatedInventory] = await Promise.all([
-        getScoreHistory(),
-        getUserInventory(),
-      ]);
-
-      this.scoreHistory = updatedScoreHistory;
-      this.userInventory = updatedInventory || [];
-
-      this.powerupMessage = `${response.message} You now have ${
-        response.effectMetadata?.max_attempts || this.scoreHistory.max_attempts
-      } attempts!`;
-
-      setTimeout(() => {
-        this.powerupMessage = "";
-      }, 5000);
-    } catch (error) {
-      console.error("Error using powerup:", error);
-      this.powerupMessage = error.message || "Failed to use powerup";
-
-      setTimeout(() => {
-        this.powerupMessage = "";
-      }, 5000);
-    } finally {
-      this.isUsingPowerup = false;
-    }
-  }
-
-  /**
-   * @returns {Array}
-   */
-  getAvailablePowerups() {
-    return this.userInventory.filter(
-      (invItem) => invItem.item.itemType === "powerup" && invItem.quantity > 0,
-    );
-  }
-
   getBestAttempt() {
     if (
       !this.scoreHistory ||
@@ -149,44 +85,6 @@ class DashboardContainer extends LitElement {
     );
   }
 
-  renderPowerups() {
-    const powerups = this.getAvailablePowerups();
-
-    if (powerups.length === 0) {
-      return html``;
-    }
-
-    return html`
-      <div class="powerups-card">
-        <h3>Available Powerups</h3>
-        <div class="powerups-list">
-          ${powerups.map(
-            (invItem) => html`
-              <div class="powerup-item">
-                <div class="powerup-info">
-                  <div class="powerup-name">${invItem.item.name}</div>
-                  <div class="powerup-description">
-                    ${invItem.item.description}
-                  </div>
-                  <div class="powerup-quantity">
-                    Quantity: ${invItem.quantity}
-                  </div>
-                </div>
-                <button
-                  class="use-powerup-button"
-                  @click=${() => this.handleUsePowerup(invItem.inventoryId)}
-                  ?disabled=${this.isUsingPowerup}
-                >
-                  ${this.isUsingPowerup ? "Using..." : "Use"}
-                </button>
-              </div>
-            `,
-          )}
-        </div>
-      </div>
-    `;
-  }
-
   render() {
     return html`
       <div class="dashboard">
@@ -197,13 +95,6 @@ class DashboardContainer extends LitElement {
                   <h2>Welcome, ${this.user.username}!</h2>
                   <p>Uncover today's color to earn points!</p>
                 </div>
-
-                ${this.powerupMessage
-                  ? html`
-                      <div class="powerup-message">${this.powerupMessage}</div>
-                    `
-                  : ""}
-                ${this.renderPowerups()}
 
                 <div class="game-status-card">
                   ${this.isLoadingHistory
@@ -452,109 +343,12 @@ class DashboardContainer extends LitElement {
       .info-card,
       .game-section,
       .game-status-card,
-      .attempts-card,
-      .powerups-card {
+      .attempts-card {
         background: white;
         padding: 24px;
         margin-bottom: 24px;
         border-radius: 8px;
         border: 2px solid #e5e7eb;
-      }
-
-      .powerup-message {
-        background: #d1fae5;
-        color: #065f46;
-        border: 2px solid #10b981;
-        padding: 16px 24px;
-        border-radius: 8px;
-        margin-bottom: 24px;
-        font-weight: 600;
-        text-align: center;
-        animation: slideIn 0.3s ease;
-      }
-
-      @keyframes slideIn {
-        from {
-          transform: translateY(-20px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      .powerups-card h3 {
-        margin: 0 0 20px 0;
-        color: var(--app-primary-color);
-      }
-
-      .powerups-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .powerup-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px;
-        background: var(--app-white);
-        border-radius: 8px;
-        border: 2px solid #e5e7eb;
-        transition: all 0.2s ease;
-      }
-
-      .powerup-item:hover {
-        border-color: var(--app-primary-color);
-      }
-
-      .powerup-info {
-        flex: 1;
-      }
-
-      .powerup-name {
-        font-size: 18px;
-        font-weight: 700;
-        color: var(--app-primary-color);
-        margin-bottom: 4px;
-      }
-
-      .powerup-description {
-        font-size: 14px;
-        color: var(--app-grey);
-        margin-bottom: 4px;
-      }
-
-      .powerup-quantity {
-        font-size: 12px;
-        font-weight: 600;
-        color: #6b7280;
-      }
-
-      .use-powerup-button {
-        background-color: #10b981;
-        color: white;
-        border: none;
-        padding: 12px 24px;
-        font-size: 16px;
-        font-weight: 600;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        min-width: 100px;
-      }
-
-      .use-powerup-button:hover:not(:disabled) {
-        background-color: #059669;
-        transform: translateY(-2px);
-      }
-
-      .use-powerup-button:disabled {
-        background-color: #9ca3af;
-        cursor: not-allowed;
-        opacity: 0.6;
       }
 
       .game-status-card h3,
