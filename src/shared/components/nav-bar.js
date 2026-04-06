@@ -7,6 +7,7 @@ import {
   friendsIcon,
   scannerIcon,
   storeIcon,
+  profileIcon,
 } from "../assets/icons.js";
 
 class NavBar extends LitElement {
@@ -65,6 +66,13 @@ class NavBar extends LitElement {
               class="${this.currentPath === routes.STORE.path ? "active" : ""}"
               @click="${() => go(routes.STORE.path)}"
               >${storeIcon}</a
+            >
+            <a
+              class="${this.currentPath === routes.PROFILE.path
+                ? "active"
+                : ""}"
+              @click="${() => go(routes.PROFILE.path)}"
+              >${profileIcon}</a
             >
           </div>
         </div>

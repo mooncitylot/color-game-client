@@ -42,6 +42,7 @@ export function setSessionUser(user) {
     points: user.points || 0,
     level: user.level || 1,
     credits: user.credits || 0,
+    userEffect: user.userEffect ?? null,
   }
   return authStorage.setItem(sessionVariables.USER, JSON.stringify(sessionUser))
 }
