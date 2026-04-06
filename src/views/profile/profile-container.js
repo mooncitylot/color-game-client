@@ -54,17 +54,44 @@ class ProfileContainer extends LitElement {
    * @param {string} [targetUserId]
    */
   async handleUsePowerup(inventoryId, item, targetUserId) {
+    const isOtherTargetPowerup = item?.metadata?.effect_target === "other";
+
     if (this.isUsingPowerup) return;
-    if (item?.metadata?.effect_target === "other" && !targetUserId) {
+    if (isOtherTargetPowerup && !targetUserId) {
       this.powerupMessage = "Select a friend to target first.";
       return;
+    }
+
+    if (isOtherTargetPowerup) {
+      console.log("[handleUsePowerup] other-target start", {
+        inventoryId,
+        targetUserId,
+        effectTarget: item?.metadata?.effect_target,
+        itemId: item?.id,
+        shopItemId: item?.shop_item_id,
+      });
     }
 
     this.isUsingPowerup = true;
     this.powerupMessage = "";
 
     try {
+      if (isOtherTargetPowerup) {
+        console.log("[handleUsePowerup] calling useItem", {
+          inventoryId,
+          targetUserId,
+        });
+      }
+
       const response = await useItem(inventoryId, targetUserId);
+
+      if (isOtherTargetPowerup) {
+        console.log("[handleUsePowerup] other-target success", {
+          inventoryId,
+          targetUserId,
+          response,
+        });
+      }
 
       const [updatedScoreHistory, updatedInventory] = await Promise.all([
         getScoreHistory(),
@@ -76,7 +103,7 @@ class ProfileContainer extends LitElement {
 
       this.powerupMessage = this.getPowerupSuccessMessage(response);
 
-      if (item?.metadata?.effect_target === "other") {
+      if (isOtherTargetPowerup) {
         this.selectedPowerupTargets = {
           ...this.selectedPowerupTargets,
           [inventoryId]: "",
@@ -87,6 +114,15 @@ class ProfileContainer extends LitElement {
         this.powerupMessage = "";
       }, 5000);
     } catch (error) {
+      if (isOtherTargetPowerup) {
+        console.error("[handleUsePowerup] other-target error", {
+          inventoryId,
+          targetUserId,
+          message: error?.message,
+          name: error?.name,
+          stack: error?.stack,
+        });
+      }
       console.error("Error using powerup:", error);
       this.powerupMessage = error.message || "Failed to use powerup";
 
