@@ -25,6 +25,14 @@ export const routes = {
     showNav: true,
     showHeader: true,
   },
+  LEADERBOARD: {
+    path: "/leaderboard",
+    componentPath: "leaderboard/leaderboard-container",
+    componentName: "leaderboard-container",
+    isPublic: false,
+    showNav: true,
+    showHeader: true,
+  },
   SCANNER: {
     path: "/scanner",
     componentPath: "scanner/scanner-container",
