@@ -5,6 +5,14 @@ import { tryRefreshAccessToken } from "./auth-refresh.js";
 
 const DEFAULT_API = process.env.API_URL;
 
+/**
+ * Base URL for API requests (empty string = same-origin relative paths).
+ * @returns {string}
+ */
+export function getApiBaseUrl() {
+  return DEFAULT_API == null ? "" : String(DEFAULT_API);
+}
+
 export const Methods = {
   GET: "GET",
   POST: "POST",
@@ -45,7 +53,8 @@ async function apiFetchOnce(path, method, body, API, canRefresh) {
 
   if (body) options.body = JSON.stringify(body);
 
-  const res = await fetch(API + path, options);
+  const base = API == null ? "" : String(API);
+  const res = await fetch(`${base}${path}`, options);
 
   if (res.ok) return res;
 

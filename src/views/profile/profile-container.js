@@ -2,6 +2,7 @@ import { LitElement, html, css } from "lit";
 import globalStyles from "../../styles/global-styles.js";
 import { getCurrentUser } from "../../services/users.js";
 import { getScoreHistory } from "../../services/colors.js";
+import { getApiBaseUrl } from "../../services/api-fetch.js";
 import { getUserInventory, useItem } from "../../services/shop.js";
 import { getFriends } from "../../services/friends.js";
 import { clearSession } from "../../session/session.js";
@@ -63,6 +64,7 @@ class ProfileContainer extends LitElement {
     }
 
     if (isOtherTargetPowerup) {
+      console.log("[handleUsePowerup] apiBaseUrl", getApiBaseUrl() || "(same-origin)");
       console.log("[handleUsePowerup] other-target start", {
         inventoryId,
         targetUserId,
@@ -86,6 +88,18 @@ class ProfileContainer extends LitElement {
       const response = await useItem(inventoryId, targetUserId);
 
       if (isOtherTargetPowerup) {
+        console.log(
+          "[handleUsePowerup] effectRecipientUserId",
+          response?.effectRecipientUserId ?? "(missing — server did not set user_effect recipient)"
+        );
+        console.log(
+          "[handleUsePowerup] use response summary",
+          JSON.stringify({
+            effectRecipientUserId: response?.effectRecipientUserId ?? null,
+            message: response?.message,
+            hasEffectMetadata: !!response?.effectMetadata,
+          })
+        );
         console.log("[handleUsePowerup] other-target success", {
           inventoryId,
           targetUserId,

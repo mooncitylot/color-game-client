@@ -256,6 +256,7 @@ class StoreContainer extends LitElement {
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        padding-bottom: 120px;
       }
 
       .loading-container {
@@ -425,7 +426,9 @@ class StoreContainer extends LitElement {
         }
 
         .items-grid {
-          grid-template-columns: 1fr;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
         }
 
         .filters {

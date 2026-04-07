@@ -374,6 +374,7 @@ class FriendsContainer extends LitElement {
         display: flex;
         flex-direction: column;
         gap: 32px;
+        padding-bottom: 120px;
       }
 
       header {

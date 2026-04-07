@@ -697,6 +697,7 @@ class ColorScanner extends LitElement {
         border-radius: 12px;
         box-shadow: var(--box-shadow);
         width: 100%;
+        max-width: 320px;
       }
 
       .preview-card {
@@ -1193,6 +1194,7 @@ class ColorScanner extends LitElement {
 
       .message-box {
         width: 100%;
+        max-width: 320px;
         display: flex;
         flex-direction: column;
         align-items: center;
