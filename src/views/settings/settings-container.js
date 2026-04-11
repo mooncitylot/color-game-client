@@ -10,6 +10,13 @@ import {
   sendTestNotification,
   initializePushNotifications,
 } from "../../services/push-notifications.js";
+import {
+  isInstalledPwa,
+  isIosLikeDevice,
+  canUseInstallPrompt,
+  promptAddToHomeScreen,
+  subscribePwaInstallState,
+} from "../../services/pwa-install.js";
 
 class SettingsContainer extends LitElement {
   static properties = {
@@ -19,6 +26,11 @@ class SettingsContainer extends LitElement {
     isLoading: { type: Boolean },
     message: { type: String },
     messageType: { type: String }, // 'success' or 'error'
+    pwaInstalled: { type: Boolean },
+    installPromptReady: { type: Boolean },
+    showIosInstallHelp: { type: Boolean },
+    showGenericInstallHint: { type: Boolean },
+    installLoading: { type: Boolean },
   };
 
   constructor() {
@@ -29,6 +41,38 @@ class SettingsContainer extends LitElement {
     this.isLoading = false;
     this.message = "";
     this.messageType = "";
+    this.pwaInstalled = false;
+    this.installPromptReady = false;
+    this.showIosInstallHelp = false;
+    this.showGenericInstallHint = false;
+    this.installLoading = false;
+    /** @type {(() => void) | undefined} */
+    this._unsubscribePwaInstall = undefined;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubscribePwaInstall = subscribePwaInstallState(() =>
+      this.syncPwaInstallUi(),
+    );
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._unsubscribePwaInstall) {
+      this._unsubscribePwaInstall();
+    }
+  }
+
+  syncPwaInstallUi() {
+    const installed = isInstalledPwa();
+    const promptReady = canUseInstallPrompt();
+    this.pwaInstalled = installed;
+    this.installPromptReady = promptReady;
+    this.showIosInstallHelp =
+      !installed && isIosLikeDevice() && !promptReady;
+    this.showGenericInstallHint =
+      !installed && !isIosLikeDevice() && !promptReady;
   }
 
   async routeEnter() {
@@ -133,6 +177,87 @@ class SettingsContainer extends LitElement {
         "error",
       );
     }
+  }
+
+  async handleAddToHomeScreen() {
+    this.installLoading = true;
+    try {
+      const { outcome } = await promptAddToHomeScreen();
+      if (outcome === "accepted") {
+        this.showMessage("ColorZap added to your home screen!", "success");
+      }
+    } catch (err) {
+      console.error("Install prompt error:", err);
+      this.showMessage("Could not show install prompt", "error");
+    } finally {
+      this.installLoading = false;
+    }
+  }
+
+  renderInstallAppSection() {
+    if (this.pwaInstalled) {
+      return html`
+        <div class="setting-item install-pwa-block">
+          <div class="setting-info">
+            <h3>Installed app</h3>
+            <p>You are running ColorZap as an installed app.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    if (this.installPromptReady) {
+      return html`
+        <div class="setting-item install-pwa-block">
+          <div class="setting-info">
+            <h3>Add to home screen</h3>
+            <p>Install ColorZap for quick access like a native app.</p>
+          </div>
+          <div class="setting-controls">
+            <button
+              class="btn btn-primary"
+              type="button"
+              @click=${this.handleAddToHomeScreen}
+              ?disabled=${this.installLoading}
+            >
+              ${this.installLoading ? "Please wait…" : "Add to home screen"}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    if (this.showIosInstallHelp) {
+      return html`
+        <div class="setting-item install-pwa-block install-ios-hint">
+          <div class="setting-info">
+            <h3>Add to home screen</h3>
+            <p class="hint ios-steps">
+              On Safari: tap the Share button (square with arrow), scroll and
+              tap <strong>Add to Home Screen</strong>, then tap
+              <strong>Add</strong>.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    if (this.showGenericInstallHint) {
+      return html`
+        <div class="setting-item install-pwa-block">
+          <div class="setting-info">
+            <h3>Add to home screen</h3>
+            <p class="hint">
+              Look for an install icon in your browser’s address bar or menu,
+              or keep using this page — an install option may appear here
+              later.
+            </p>
+          </div>
+        </div>
+      `;
+    }
+
+    return null;
   }
 
   renderPushSettings() {
@@ -251,6 +376,11 @@ class SettingsContainer extends LitElement {
         </div>
 
         <div class="settings-section">
+          <h2>Install app</h2>
+          ${this.renderInstallAppSection()}
+        </div>
+
+        <div class="settings-section">
           <h2>About</h2>
           <div class="setting-item">
             <div class="setting-info">
@@ -311,6 +441,18 @@ class SettingsContainer extends LitElement {
 
       .setting-item:last-child {
         border-bottom: none;
+      }
+
+      .install-pwa-block {
+        align-items: flex-start;
+      }
+
+      .install-ios-hint .setting-info {
+        width: 100%;
+      }
+
+      .ios-steps {
+        line-height: 1.5;
       }
 
       .setting-info {

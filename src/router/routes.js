@@ -81,6 +81,14 @@ export const routes = {
     showNav: true,
     showHeader: true,
   },
+  NEWS: {
+    path: "/news",
+    componentPath: "news/news-container",
+    componentName: "news-container",
+    isPublic: false,
+    showNav: true,
+    showHeader: true,
+  },
 };
 
 // Add pathRegexp to each route
