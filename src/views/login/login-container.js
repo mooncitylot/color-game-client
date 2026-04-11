@@ -4,9 +4,11 @@ import "./login-form.js";
 import routes from "../../router/routes.js";
 import { go } from "../../router/router-mixin.js";
 import { clearSession, isAuthenticated } from "../../session/session.js";
+import { ensureSessionFromCookies } from "../../services/users.js";
 
 class LoginContainerElement extends LitElement {
-  routeEnter() {
+  async routeEnter() {
+    await ensureSessionFromCookies();
     if (isAuthenticated()) {
       return go(routes.DASHBOARD.path);
     }

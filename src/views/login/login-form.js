@@ -32,14 +32,8 @@ class LoginForm extends LitElement {
         deviceFingerprint: navigator.userAgent, // Use user agent as device fingerprint
       });
 
-      console.log("Login response:", loginResponse);
-
-      // Store session data if tokens are returned
-      if (loginResponse.token || loginResponse.accessToken) {
-        setSessionData({
-          token: loginResponse.token || loginResponse.accessToken,
-          expiry: loginResponse.expiry || loginResponse.expiresAt,
-        });
+      if (loginResponse.expiresAt) {
+        setSessionData({ expiry: loginResponse.expiresAt });
       }
 
       const user = await getCurrentUser();

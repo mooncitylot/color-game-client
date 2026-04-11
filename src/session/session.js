@@ -24,9 +24,12 @@ function migrateSessionFromSessionStorageIfNeeded() {
 
 migrateSessionFromSessionStorageIfNeeded()
 
-export function setSessionData({ expiry, user, token }) {
-  setSessionExpiration(expiry)
-  setUserToken(token)
+/**
+ * @param {{ expiry?: string, user?: object }} opts
+ */
+export function setSessionData({ expiry, user }) {
+  if (expiry) setSessionExpiration(expiry)
+  authStorage.removeItem(sessionVariables.USER_TOKEN)
   if (user) setSessionUser(user)
 }
 
@@ -56,28 +59,16 @@ export function clearSession() {
   Object.values(sessionVariables).forEach((key) => authStorage.removeItem(key))
 }
 
-export function setUserToken(token) {
-  return authStorage.setItem(sessionVariables.USER_TOKEN, token)
-}
-
-export function getUserToken() {
-  return authStorage.getItem(sessionVariables.USER_TOKEN)
-}
-
 /**
- * Auth is via Bearer token in localStorage and/or HttpOnly cookies (see API login).
- * When the API only sets cookies, there is no token string — we treat a cached user
- * from a successful /v1/users/me as authenticated until cleared or the API returns 401.
+ * Auth uses HttpOnly JWT cookies; localStorage holds cached user + optional expiry hint.
  * @returns {boolean}
  */
 export function isAuthenticated() {
-  const token = getUserToken()
-  if (token && String(token).trim()) {
-    const expiration = getSessionExpiration()
-    if (!expiration) return true
-    return new Date(expiration).getTime() >= new Date().getTime()
-  }
-  return !!getSessionUser()
+  const user = getSessionUser()
+  if (!user) return false
+  const expiration = getSessionExpiration()
+  if (!expiration) return true
+  return new Date(expiration).getTime() >= new Date().getTime()
 }
 
 export function sessionIsExpired() {

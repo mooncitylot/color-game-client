@@ -1,6 +1,7 @@
 import { LitElement } from 'lit'
 import { routes, getRouteByPath } from './routes.js'
 import { isAuthenticated } from '../session/session.js'
+import { ensureSessionFromCookies } from '../services/users.js'
 
 export function go(path) {
   window.history.pushState(null, null, path)
@@ -36,9 +37,11 @@ export default (SuperClass) => {
       
       if (!routeObj) return go(routes.LOGIN.path)
 
-      // Check if route requires authentication
-      if (!routeObj.isPublic && !isAuthenticated()) {
-        return go(routes.LOGIN.path)
+      if (!routeObj.isPublic) {
+        await ensureSessionFromCookies()
+        if (!isAuthenticated()) {
+          return go(routes.LOGIN.path)
+        }
       }
 
       this.showHeader = routeObj.path !== routes.LOGIN.path && routeObj.path !== routes.SIGNUP.path

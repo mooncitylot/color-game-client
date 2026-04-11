@@ -1,12 +1,11 @@
 import { setSessionData } from "../session/session.js";
-
-const DEFAULT_API = process.env.API_URL;
+import { getApiBaseUrl } from "./api-fetch.js";
 
 /**
  * @returns {Promise<boolean>}
  */
 export async function tryRefreshAccessToken() {
-  const res = await fetch(`${DEFAULT_API}/v1/auth/refresh`, {
+  const res = await fetch(`${getApiBaseUrl()}/v1/auth/refresh`, {
     method: "POST",
     credentials: "include",
     headers: {
@@ -22,11 +21,8 @@ export async function tryRefreshAccessToken() {
 
   try {
     const data = JSON.parse(text);
-    if (data.accessToken) {
-      setSessionData({
-        token: data.accessToken,
-        expiry: data.expiresAt,
-      });
+    if (data.expiresAt) {
+      setSessionData({ expiry: data.expiresAt });
     }
   } catch {
     // cookies may still have updated access_token

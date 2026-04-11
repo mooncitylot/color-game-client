@@ -3,7 +3,7 @@ import { getCurrentUser } from "../../services/users.js";
 import { getScoreHistory } from "../../services/colors.js";
 import { getFriends, getFriendRequests } from "../../services/friends.js";
 import globalStyles from "../../styles/global-styles.js";
-import { clearSession } from "../../session/session.js";
+import { logoutUser } from "../../services/users.js";
 import { go } from "../../router/router-mixin.js";
 import { routes } from "../../router/routes.js";
 import { getDailyColor } from "../../services/colors.js";
@@ -51,8 +51,8 @@ class DashboardContainer extends LitElement {
     }
   }
 
-  handleLogout() {
-    clearSession();
+  async handleLogout() {
+    await logoutUser();
     go(routes.LOGIN.path);
   }
 

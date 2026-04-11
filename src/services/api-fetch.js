@@ -1,4 +1,4 @@
-import { getUserToken, clearSession } from "../session/session.js";
+import { clearSession } from "../session/session.js";
 import { go } from "../router/router-mixin.js";
 import { routes } from "../router/routes.js";
 import { tryRefreshAccessToken } from "./auth-refresh.js";
@@ -21,11 +21,27 @@ export const Methods = {
 };
 
 /**
- * Handle 401 Unauthorized errors by clearing session and redirecting to login
+ * Clears HttpOnly auth cookies on the server, then local session state.
  */
-function handleUnauthorized() {
+async function clearServerAuthCookies() {
+  const base = DEFAULT_API == null ? "" : String(DEFAULT_API);
+  try {
+    await fetch(`${base}/v1/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+      headers: { Accept: "application/json" },
+    });
+  } catch {
+    // ignore
+  }
+}
+
+/**
+ * Handle 401 Unauthorized errors by clearing cookies/session and redirecting to login
+ */
+async function handleUnauthorized() {
+  await clearServerAuthCookies();
   clearSession();
-  // Only redirect if not already on login or signup page
   const currentPath = window.location.pathname;
   if (currentPath !== routes.LOGIN.path && currentPath !== routes.SIGNUP.path) {
     go(routes.LOGIN.path);
@@ -36,14 +52,10 @@ function handleUnauthorized() {
  * @param {boolean} canRefresh
  */
 async function apiFetchOnce(path, method, body, API, canRefresh) {
-  const token = getUserToken();
   const headers = {
     "Content-Type": "application/json",
     Accept: "application/json",
   };
-  if (token && String(token).trim()) {
-    headers.Authorization = `Bearer ${token}`;
-  }
 
   const options = {
     method,
@@ -70,7 +82,7 @@ async function apiFetchOnce(path, method, body, API, canRefresh) {
   }
 
   if (res.status === 401) {
-    handleUnauthorized();
+    await handleUnauthorized();
   }
 
   let errorMessage = res.statusText;
@@ -96,6 +108,7 @@ async function apiFetchOnce(path, method, body, API, canRefresh) {
  */
 function shouldAttemptRefresh(path) {
   if (path.includes("/v1/auth/login")) return false;
+  if (path.includes("/v1/auth/logout")) return false;
   if (path.includes("/v1/auth/refresh")) return false;
   if (path.includes("/v1/auth/signup")) return false;
   return true;

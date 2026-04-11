@@ -5,7 +5,7 @@ import { getScoreHistory } from "../../services/colors.js";
 import { getApiBaseUrl } from "../../services/api-fetch.js";
 import { getUserInventory, useItem } from "../../services/shop.js";
 import { getFriends } from "../../services/friends.js";
-import { clearSession } from "../../session/session.js";
+import { logoutUser } from "../../services/users.js";
 import { go } from "../../router/router-mixin.js";
 import { routes } from "../../router/routes.js";
 
@@ -283,8 +283,8 @@ class ProfileContainer extends LitElement {
     `;
   }
 
-  handleLogout() {
-    clearSession();
+  async handleLogout() {
+    await logoutUser();
     go(routes.LOGIN.path);
   }
 
