@@ -218,12 +218,14 @@ class ShopItemCard extends LitElement {
       border-radius: 8px;
       overflow: hidden;
       background-color: #f9fafb;
+      border-radius: 8px;
     }
 
     .item-icon img {
       max-width: 100%;
       max-height: 100%;
       object-fit: contain;
+      border-radius: 8px;
     }
 
     .item-icon.placeholder {
