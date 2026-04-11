@@ -73,6 +73,14 @@ export const routes = {
     showNav: true,
     showHeader: true,
   },
+  SETTINGS: {
+    path: "/settings",
+    componentPath: "settings/settings-container",
+    componentName: "settings-container",
+    isPublic: false,
+    showNav: true,
+    showHeader: true,
+  },
 };
 
 // Add pathRegexp to each route

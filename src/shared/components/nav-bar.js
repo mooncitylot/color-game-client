@@ -9,6 +9,7 @@ import {
   scannerIcon,
   storeIcon,
   profileIcon,
+  settingsIcon,
   menuIcon,
 } from "../assets/icons.js";
 
@@ -52,6 +53,11 @@ class NavBar extends LitElement {
         path: routes.PROFILE.path,
         label: "Profile",
         icon: profileIcon,
+      },
+      {
+        path: routes.SETTINGS.path,
+        label: "Settings",
+        icon: settingsIcon,
       },
     ];
     this.handleNavDialogKeyDown = this.handleNavDialogKeyDown.bind(this);

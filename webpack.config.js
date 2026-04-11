@@ -74,6 +74,7 @@ export default (env, { mode }) => {
         'process.env.API_URL': JSON.stringify(process.env.API_URL),
         'process.env.APP_URL': JSON.stringify(process.env.APP_URL),
         'process.env.DEV_PORT': JSON.stringify(process.env.DEV_PORT),
+        'process.env.VAPID_PUBLIC_KEY': JSON.stringify(process.env.VAPID_PUBLIC_KEY || ''),
       }),
       new HtmlWebpackPlugin({
         template: 'index.html',
