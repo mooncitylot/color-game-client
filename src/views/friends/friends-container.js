@@ -3,7 +3,6 @@ import globalStyles from "../../styles/global-styles.js";
 import {
   getFriends,
   getFriendRequests,
-  getFriendActivity,
   searchFriends,
   sendFriendRequest,
   respondToFriendRequest,
@@ -16,7 +15,6 @@ class FriendsContainer extends LitElement {
   static properties = {
     friends: { type: Array },
     requests: { type: Array },
-    activity: { type: Array },
     searchResults: { type: Array },
     searchQuery: { type: String },
     isLoading: { type: Boolean },
@@ -29,7 +27,6 @@ class FriendsContainer extends LitElement {
     super();
     this.friends = [];
     this.requests = [];
-    this.activity = [];
     this.searchResults = [];
     this.searchQuery = "";
     this.isLoading = true;
@@ -45,14 +42,12 @@ class FriendsContainer extends LitElement {
   async loadFriendsData() {
     try {
       this.isLoading = true;
-      const [friendsRes, requestsRes, activityRes] = await Promise.all([
+      const [friendsRes, requestsRes] = await Promise.all([
         getFriends(),
         getFriendRequests(),
-        getFriendActivity(),
       ]);
       this.friends = friendsRes.friends || [];
       this.requests = requestsRes.requests || [];
-      this.activity = activityRes.activity || [];
       this.isLoading = false;
     } catch (error) {
       console.error("Failed to load friends data", error);
@@ -199,18 +194,6 @@ class FriendsContainer extends LitElement {
               ? html`<p class="empty-state">No pending requests.</p>`
               : this.renderRequestsList()}
           </section>
-
-          <section class="activity-card">
-            <div class="section-header">
-              <h2>Friend Activity</h2>
-              <span class="count">${this.activity.length} recent</span>
-            </div>
-            ${this.activity.length === 0
-              ? html`<p class="empty-state">
-                  No recent activity from friends.
-                </p>`
-              : this.renderActivityList()}
-          </section>
         </div>
       </div>
     `;
@@ -287,28 +270,6 @@ class FriendsContainer extends LitElement {
                     </div>
                   `
                 : html`<span class="status pending">Pending</span>`}
-            </li>
-          `,
-        )}
-      </ul>
-    `;
-  }
-
-  renderActivityList() {
-    return html`
-      <ul class="activity-list">
-        ${this.activity.map(
-          (entry) => html`
-            <li>
-              <div>
-                <h3>${entry.username}</h3>
-                <p>
-                  Best score:
-                  <strong>${entry.bestScore}%</strong> (${entry.attemptsUsed}
-                  attempts) on ${entry.date}
-                </p>
-              </div>
-              <div class="score-badge">${entry.bestScore}</div>
             </li>
           `,
         )}
@@ -435,7 +396,6 @@ class FriendsContainer extends LitElement {
 
       .friends-list li,
       .requests-list li,
-      .activity-list li,
       .search-results li {
         gap: 16px;
       }
@@ -480,7 +440,7 @@ class FriendsContainer extends LitElement {
         gap: 12px;
       }
 
-      .activity-card .score-badge {
+      ..score-badge {
         background: var(--app-primary-color);
         color: white;
         font-weight: bold;

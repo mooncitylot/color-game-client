@@ -227,7 +227,7 @@ class ShopItemCard extends LitElement {
     }
 
     .item-icon.placeholder {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: red;
     }
 
     .placeholder-text {
@@ -261,7 +261,7 @@ class ShopItemCard extends LitElement {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      background: var(--app-primary-color);
       color: white;
       padding: 8px 12px;
       border-radius: 6px;
@@ -316,7 +316,7 @@ class ShopItemCard extends LitElement {
       font-size: 16px;
       font-weight: 700;
       color: white;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      background: var(--app-primary-color);
       border: none;
       border-radius: 8px;
       cursor: pointer;

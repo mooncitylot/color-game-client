@@ -8,6 +8,9 @@ export function go(path) {
   window.dispatchEvent(new CustomEvent('route-change'))
 }
 
+/** Class applied to routed view roots for entry animation (styled in app-enter). */
+export const VIEW_ROUTE_ENTER_CLASS = 'view-route-enter'
+
 const componentLoader = (pathname) => import(`./../views/${pathname}.js`)
 
 export default (SuperClass) => {
@@ -67,6 +70,7 @@ export default (SuperClass) => {
       const slot = this.shadowRoot.querySelector('slot')
       slot.innerHTML = ''
       slot.append(component)
+      component.classList.add(VIEW_ROUTE_ENTER_CLASS)
     }
   }
 }
