@@ -94,6 +94,7 @@ class DashboardContainer extends LitElement {
                 <div class="welcome-card">
                   <h2>Welcome, ${this.user.username}!</h2>
                   <p>Uncover today's color to earn points!</p>
+                  <a class="news-link" href="/news">See what's new</a>
                 </div>
 
                 <div class="game-status-card">
@@ -196,10 +197,7 @@ class DashboardContainer extends LitElement {
                 </div>
               `
             : ""}
-          <button
-            class="scan-button secondary"
-            @click=${this.handleGoToScanner}
-          >
+          <button class="scan-button" @click=${this.handleGoToScanner}>
             View Results
           </button>
         </div>
@@ -431,10 +429,6 @@ class DashboardContainer extends LitElement {
         transform: translateY(-2px);
       }
 
-      .scan-button.secondary {
-        background-color: #6b7280;
-      }
-
       .attempts-list {
         display: flex;
         flex-direction: column;
@@ -534,6 +528,11 @@ class DashboardContainer extends LitElement {
 
       .info-card p {
         margin: 8px 0;
+      }
+
+      .news-link {
+        text-decoration: none;
+        color: var(--app-cta-color);
       }
     `,
   ];

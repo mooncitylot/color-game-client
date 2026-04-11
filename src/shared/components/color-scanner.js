@@ -414,7 +414,7 @@ class ColorScanner extends LitElement {
     const gameUrl = window.location.origin + "/scanner";
 
     const shareText =
-      `🎨 ColorZap – I scored ${bestAttempt.score}% on "${colorName}" ` +
+      `ColorZap – I scored ${bestAttempt.score}% on "${colorName}" ` +
       `in ${attemptsUsed} attempt${attemptsUsed !== 1 ? "s" : ""}!\n` +
       `Think you can do better? Play now: ${gameUrl}`;
 
@@ -721,17 +721,14 @@ class ColorScanner extends LitElement {
           : ""}
 
         <div class="button-group">
-          <button
-            class="share-button"
-            @click=${this.handleShare}
-          >
+          <button class="share-button" @click=${this.handleShare}>
             ${this.shareStatus === "copied"
               ? "✓ Copied to clipboard!"
               : this.shareStatus === "shared"
                 ? "✓ Shared!"
                 : this.shareStatus === "error"
-                  ? "⚠ Copy failed"
-                  : "🔗 Share Score"}
+                  ? "Copy failed"
+                  : "Share Score"}
           </button>
           <button class="retry-button full-width" @click=${this.handleRetry}>
             ${this.currentAttempt >= this.maxAttempts
@@ -1223,12 +1220,8 @@ class ColorScanner extends LitElement {
       }
 
       .share-button {
-        background-color: #3b82f6;
+        background-color: var(--app-primary-color);
         color: white;
-      }
-
-      .share-button:hover {
-        background-color: #2563eb;
       }
 
       .retry-button {
