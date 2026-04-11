@@ -26,6 +26,8 @@ class ColorScanner extends LitElement {
     cameraReady: { type: Boolean },
     effects: { type: Object },
     turdMode: { type: Boolean },
+    /** Tracks share button feedback: null | 'shared' | 'copied' | 'error' */
+    shareStatus: { type: String },
   };
 
   constructor() {
@@ -47,6 +49,7 @@ class ColorScanner extends LitElement {
     this.animationId = null;
     this.effects = [];
     this.turdMode = false;
+    this.shareStatus = null;
   }
 
   async connectedCallback() {
@@ -389,10 +392,73 @@ class ColorScanner extends LitElement {
     }
   }
 
+  /**
+   * Shares the player's final score via the Web Share API when available,
+   * falling back to copying a pre-built message to the clipboard.
+   *
+   * The shared message includes the best score, the target color name, the
+   * number of attempts used, and a direct link to the game.
+   */
+  async handleShare() {
+    const bestAttempt = this.getBestAttempt();
+    if (!bestAttempt) return;
+
+    // Clear any pending reset timer so rapid clicks don't race
+    if (this._shareStatusTimer) {
+      clearTimeout(this._shareStatusTimer);
+      this._shareStatusTimer = null;
+    }
+
+    const colorName = this.targetColor?.color_name ?? "today's color";
+    const attemptsUsed = this.attempts.length;
+    const gameUrl = window.location.origin + "/scanner";
+
+    const shareText =
+      `🎨 ColorZap – I scored ${bestAttempt.score}% on "${colorName}" ` +
+      `in ${attemptsUsed} attempt${attemptsUsed !== 1 ? "s" : ""}!\n` +
+      `Think you can do better? Play now: ${gameUrl}`;
+
+    // Use the native Web Share API when the browser supports it
+    if (navigator.share) {
+      try {
+        await navigator.share({ text: shareText });
+        this.shareStatus = "shared";
+      } catch (err) {
+        // AbortError means the user dismissed the native share sheet – not an error
+        if (err.name === "AbortError") {
+          this.shareStatus = null;
+          return;
+        }
+        console.error("Share failed:", err);
+        this.shareStatus = "error";
+      }
+    } else {
+      // Fallback: copy the share text to the clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        this.shareStatus = "copied";
+      } catch (err) {
+        console.error("Clipboard write failed:", err);
+        this.shareStatus = "error";
+      }
+    }
+
+    // Reset the button label after 3 seconds
+    this._shareStatusTimer = setTimeout(() => {
+      this.shareStatus = null;
+      this._shareStatusTimer = null;
+    }, 3000);
+  }
+
   disconnectedCallback() {
     super.disconnectedCallback();
     this.stopCameraStream();
     this.stopAnimation();
+    // Clean up the share-status reset timer if the component is removed
+    if (this._shareStatusTimer) {
+      clearTimeout(this._shareStatusTimer);
+      this._shareStatusTimer = null;
+    }
   }
 
   render() {
@@ -655,6 +721,18 @@ class ColorScanner extends LitElement {
           : ""}
 
         <div class="button-group">
+          <button
+            class="share-button"
+            @click=${this.handleShare}
+          >
+            ${this.shareStatus === "copied"
+              ? "✓ Copied to clipboard!"
+              : this.shareStatus === "shared"
+                ? "✓ Shared!"
+                : this.shareStatus === "error"
+                  ? "⚠ Copy failed"
+                  : "🔗 Share Score"}
+          </button>
           <button class="retry-button full-width" @click=${this.handleRetry}>
             ${this.currentAttempt >= this.maxAttempts
               ? "Check for Tomorrow's Challenge"
@@ -1111,12 +1189,14 @@ class ColorScanner extends LitElement {
 
       .button-group {
         display: flex;
+        flex-direction: column;
         gap: 12px;
         width: 100%;
       }
 
       .submit-button,
-      .retry-button {
+      .retry-button,
+      .share-button {
         flex: 1;
         padding: 14px 24px;
         font-size: 16px;
@@ -1140,6 +1220,15 @@ class ColorScanner extends LitElement {
         background-color: #9ca3af;
         cursor: not-allowed;
         opacity: 0.6;
+      }
+
+      .share-button {
+        background-color: #3b82f6;
+        color: white;
+      }
+
+      .share-button:hover {
+        background-color: #2563eb;
       }
 
       .retry-button {
