@@ -2,6 +2,7 @@ import { pwaInstallHandler } from "pwa-install-handler";
 
 /** @type {Set<() => void>} */
 const stateListeners = new Set();
+let installInitStarted = false;
 
 const PWA_DEBUG_PREFIX = "[PWA Install]";
 
@@ -23,7 +24,73 @@ function notifyInstallStateChanged() {
   });
 }
 
+async function ensureInstallServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    debugLog(
+      "service workers not supported; install prompt will stay unavailable",
+    );
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.register(
+      "/service-worker.js",
+      {
+        scope: "/",
+      },
+    );
+
+    debugLog("service worker registration for installability", {
+      scope: registration.scope,
+      hasController: Boolean(navigator.serviceWorker.controller),
+      activeState: registration.active?.state || null,
+      waitingState: registration.waiting?.state || null,
+      installingState: registration.installing?.state || null,
+    });
+
+    navigator.serviceWorker.addEventListener("controllerchange", () => {
+      debugLog("service worker controllerchange", {
+        hasController: Boolean(navigator.serviceWorker.controller),
+      });
+      notifyInstallStateChanged();
+    });
+
+    await navigator.serviceWorker.ready;
+    debugLog("service worker ready", {
+      hasController: Boolean(navigator.serviceWorker.controller),
+    });
+
+    if (!navigator.serviceWorker.controller) {
+      debugLog(
+        "page not yet controlled by service worker; reload once to satisfy installability on first registration",
+      );
+    }
+  } catch (error) {
+    console.error("[PWA Install] service worker registration error", error);
+  }
+}
+
+export function initializePwaInstallSystem() {
+  if (installInitStarted || typeof window === "undefined") {
+    return;
+  }
+
+  installInitStarted = true;
+  debugLog("initializePwaInstallSystem");
+
+  const ua = window.navigator.userAgent;
+  if (/Android/i.test(ua) && window.navigator.platform === "MacIntel") {
+    debugLog(
+      "android UA with MacIntel platform detected (likely Chrome device emulation)",
+    );
+  }
+
+  ensureInstallServiceWorker();
+}
+
 if (typeof window !== "undefined") {
+  initializePwaInstallSystem();
+
   pwaInstallHandler.addListener((canInstall) => {
     debugLog("pwaInstallHandler listener fired", {
       canInstall,

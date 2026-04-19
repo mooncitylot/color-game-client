@@ -3,6 +3,7 @@ import routerMixin, { VIEW_ROUTE_ENTER_CLASS } from "./router/router-mixin.js";
 import globalStyles from "./styles/global-styles.js";
 import { getRouteByPath } from "./router/routes.js";
 import "../src/shared/components/nav-bar.js";
+import { initializePwaInstallSystem } from "./services/pwa-install.js";
 
 class AppEnterElement extends routerMixin(LitElement) {
   static properties = {
@@ -20,6 +21,7 @@ class AppEnterElement extends routerMixin(LitElement) {
 
   connectedCallback() {
     super.connectedCallback();
+    initializePwaInstallSystem();
     this.updateCurrentRoute();
     window.addEventListener("route-change", () => this.urlChange(), false);
   }
