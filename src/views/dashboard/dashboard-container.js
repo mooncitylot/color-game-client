@@ -10,7 +10,9 @@ import { getDailyColor } from "../../services/colors.js";
 import { winnerIcon } from "../../shared/assets/icons.js";
 import {
   isInstalledPwa,
+  isIosLikeDevice,
   canUseInstallPrompt,
+  canShowManualInstallGuide,
   promptAddToHomeScreen,
   subscribePwaInstallState,
 } from "../../services/pwa-install.js";
@@ -23,6 +25,8 @@ class DashboardContainer extends LitElement {
     friendSummary: { type: Object },
     dailyChallenge: { type: Object },
     pwaInstalled: { type: Boolean },
+    iosLikeDevice: { type: Boolean },
+    manualInstallGuideAvailable: { type: Boolean },
     installPromptReady: { type: Boolean },
     installLoading: { type: Boolean },
   };
@@ -35,6 +39,8 @@ class DashboardContainer extends LitElement {
     this.friendSummary = { friends: 0, requests: 0 };
     this.dailyChallenge = null;
     this.pwaInstalled = false;
+    this.iosLikeDevice = false;
+    this.manualInstallGuideAvailable = false;
     this.installPromptReady = false;
     this.installLoading = false;
     /** @type {(() => void) | undefined} */
@@ -57,9 +63,13 @@ class DashboardContainer extends LitElement {
 
   syncPwaInstallUi() {
     this.pwaInstalled = isInstalledPwa();
+    this.iosLikeDevice = isIosLikeDevice();
+    this.manualInstallGuideAvailable = canShowManualInstallGuide();
     this.installPromptReady = canUseInstallPrompt();
     console.log("[Dashboard Install UI] syncPwaInstallUi", {
       pwaInstalled: this.pwaInstalled,
+      iosLikeDevice: this.iosLikeDevice,
+      manualInstallGuideAvailable: this.manualInstallGuideAvailable,
       installPromptReady: this.installPromptReady,
       userAgent: navigator.userAgent,
       platform: navigator.platform,
@@ -120,6 +130,9 @@ class DashboardContainer extends LitElement {
       console.log("[Dashboard Install UI] handleInstallApp click");
       const result = await promptAddToHomeScreen();
       console.log("[Dashboard Install UI] prompt result", result);
+      if (result.outcome === "guided") {
+        alert("Install guide opened.");
+      }
     } catch (err) {
       console.error("Install prompt error:", err);
     } finally {
@@ -150,7 +163,9 @@ class DashboardContainer extends LitElement {
                   <h2>Welcome, ${this.user.username}!</h2>
                   <p>Uncover today's color to earn points!</p>
                   <a class="news-link" href="/news">See what's new</a>
-                  ${!this.pwaInstalled && this.installPromptReady
+                  ${!this.pwaInstalled &&
+                  (this.installPromptReady ||
+                    (this.iosLikeDevice && this.manualInstallGuideAvailable))
                     ? html`
                         <button
                           class="install-button"
@@ -160,7 +175,9 @@ class DashboardContainer extends LitElement {
                         >
                           ${this.installLoading
                             ? "Opening install prompt..."
-                            : "Install"}
+                            : this.installPromptReady
+                              ? "Install"
+                              : "Install Guide"}
                         </button>
                       `
                     : ""}

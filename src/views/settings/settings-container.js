@@ -14,7 +14,9 @@ import {
   isInstalledPwa,
   isIosLikeDevice,
   canUseInstallPrompt,
+  canShowManualInstallGuide,
   promptAddToHomeScreen,
+  showManualInstallGuide,
   subscribePwaInstallState,
 } from "../../services/pwa-install.js";
 
@@ -30,6 +32,7 @@ class SettingsContainer extends LitElement {
     installPromptReady: { type: Boolean },
     showIosInstallHelp: { type: Boolean },
     showGenericInstallHint: { type: Boolean },
+    manualInstallGuideAvailable: { type: Boolean },
     installLoading: { type: Boolean },
   };
 
@@ -45,6 +48,7 @@ class SettingsContainer extends LitElement {
     this.installPromptReady = false;
     this.showIosInstallHelp = false;
     this.showGenericInstallHint = false;
+    this.manualInstallGuideAvailable = false;
     this.installLoading = false;
     /** @type {(() => void) | undefined} */
     this._unsubscribePwaInstall = undefined;
@@ -68,15 +72,18 @@ class SettingsContainer extends LitElement {
     const installed = isInstalledPwa();
     const promptReady = canUseInstallPrompt();
     const iosLike = isIosLikeDevice();
+    const manualGuideAvailable = canShowManualInstallGuide();
     this.pwaInstalled = installed;
     this.installPromptReady = promptReady;
     this.showIosInstallHelp = !installed && iosLike && !promptReady;
     this.showGenericInstallHint = !installed && !iosLike && !promptReady;
+    this.manualInstallGuideAvailable = manualGuideAvailable;
 
     console.log("[Settings Install UI] syncPwaInstallUi", {
       installed,
       promptReady,
       iosLike,
+      manualGuideAvailable,
       showIosInstallHelp: this.showIosInstallHelp,
       showGenericInstallHint: this.showGenericInstallHint,
       userAgent: navigator.userAgent,
@@ -197,6 +204,8 @@ class SettingsContainer extends LitElement {
       console.log("[Settings Install UI] prompt outcome", { outcome });
       if (outcome === "accepted") {
         this.showMessage("ColorZap added to your home screen!", "success");
+      } else if (outcome === "guided") {
+        this.showMessage("Install guide opened", "success");
       }
     } catch (err) {
       console.error("Install prompt error:", err);
@@ -248,6 +257,17 @@ class SettingsContainer extends LitElement {
               On iPhone or iPad: open the browser share/menu options, then tap
               <strong>Add to Home Screen</strong>.
             </p>
+            ${this.manualInstallGuideAvailable
+              ? html`
+                  <button
+                    class="btn btn-primary"
+                    type="button"
+                    @click=${() => showManualInstallGuide("en")}
+                  >
+                    Open Install Guide
+                  </button>
+                `
+              : ""}
           </div>
         </div>
       `;
@@ -262,6 +282,17 @@ class SettingsContainer extends LitElement {
               Look for an install icon in your browser’s address bar or menu, or
               keep using this page — an install option may appear here later.
             </p>
+            ${this.manualInstallGuideAvailable
+              ? html`
+                  <button
+                    class="btn btn-primary"
+                    type="button"
+                    @click=${() => showManualInstallGuide("en")}
+                  >
+                    Open Install Guide
+                  </button>
+                `
+              : ""}
           </div>
         </div>
       `;
