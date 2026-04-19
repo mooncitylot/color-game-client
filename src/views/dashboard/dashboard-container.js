@@ -8,6 +8,12 @@ import { go } from "../../router/router-mixin.js";
 import { routes } from "../../router/routes.js";
 import { getDailyColor } from "../../services/colors.js";
 import { winnerIcon } from "../../shared/assets/icons.js";
+import {
+  isInstalledPwa,
+  canUseInstallPrompt,
+  promptAddToHomeScreen,
+  subscribePwaInstallState,
+} from "../../services/pwa-install.js";
 
 class DashboardContainer extends LitElement {
   static properties = {
@@ -16,6 +22,9 @@ class DashboardContainer extends LitElement {
     isLoadingHistory: { type: Boolean },
     friendSummary: { type: Object },
     dailyChallenge: { type: Object },
+    pwaInstalled: { type: Boolean },
+    installPromptReady: { type: Boolean },
+    installLoading: { type: Boolean },
   };
 
   constructor() {
@@ -25,6 +34,30 @@ class DashboardContainer extends LitElement {
     this.isLoadingHistory = true;
     this.friendSummary = { friends: 0, requests: 0 };
     this.dailyChallenge = null;
+    this.pwaInstalled = false;
+    this.installPromptReady = false;
+    this.installLoading = false;
+    /** @type {(() => void) | undefined} */
+    this._unsubscribePwaInstall = undefined;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    this._unsubscribePwaInstall = subscribePwaInstallState(() =>
+      this.syncPwaInstallUi(),
+    );
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._unsubscribePwaInstall) {
+      this._unsubscribePwaInstall();
+    }
+  }
+
+  syncPwaInstallUi() {
+    this.pwaInstalled = isInstalledPwa();
+    this.installPromptReady = canUseInstallPrompt();
   }
 
   async routeEnter() {
@@ -72,6 +105,20 @@ class DashboardContainer extends LitElement {
     go(routes.FRIENDS.path);
   }
 
+  async handleInstallApp() {
+    if (this.installLoading || !this.installPromptReady) {
+      return;
+    }
+    this.installLoading = true;
+    try {
+      await promptAddToHomeScreen();
+    } catch (err) {
+      console.error("Install prompt error:", err);
+    } finally {
+      this.installLoading = false;
+    }
+  }
+
   getBestAttempt() {
     if (
       !this.scoreHistory ||
@@ -95,6 +142,20 @@ class DashboardContainer extends LitElement {
                   <h2>Welcome, ${this.user.username}!</h2>
                   <p>Uncover today's color to earn points!</p>
                   <a class="news-link" href="/news">See what's new</a>
+                  ${!this.pwaInstalled && this.installPromptReady
+                    ? html`
+                        <button
+                          class="install-button"
+                          type="button"
+                          @click=${this.handleInstallApp}
+                          ?disabled=${this.installLoading}
+                        >
+                          ${this.installLoading
+                            ? "Opening install prompt..."
+                            : "Install"}
+                        </button>
+                      `
+                    : ""}
                 </div>
 
                 <div class="game-status-card">
@@ -532,6 +593,23 @@ class DashboardContainer extends LitElement {
       .news-link {
         text-decoration: none;
         color: var(--app-cta-color);
+      }
+
+      .install-button {
+        margin-top: 16px;
+        background-color: var(--app-primary-color);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      .install-button:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
       }
     `,
   ];
