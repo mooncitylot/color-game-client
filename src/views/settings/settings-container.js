@@ -67,11 +67,22 @@ class SettingsContainer extends LitElement {
   syncPwaInstallUi() {
     const installed = isInstalledPwa();
     const promptReady = canUseInstallPrompt();
+    const iosLike = isIosLikeDevice();
     this.pwaInstalled = installed;
     this.installPromptReady = promptReady;
-    this.showIosInstallHelp = !installed && isIosLikeDevice() && !promptReady;
-    this.showGenericInstallHint =
-      !installed && !isIosLikeDevice() && !promptReady;
+    this.showIosInstallHelp = !installed && iosLike && !promptReady;
+    this.showGenericInstallHint = !installed && !iosLike && !promptReady;
+
+    console.log("[Settings Install UI] syncPwaInstallUi", {
+      installed,
+      promptReady,
+      iosLike,
+      showIosInstallHelp: this.showIosInstallHelp,
+      showGenericInstallHint: this.showGenericInstallHint,
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      maxTouchPoints: navigator.maxTouchPoints,
+    });
   }
 
   async routeEnter() {
@@ -181,7 +192,9 @@ class SettingsContainer extends LitElement {
   async handleAddToHomeScreen() {
     this.installLoading = true;
     try {
+      console.log("[Settings Install UI] handleAddToHomeScreen click");
       const { outcome } = await promptAddToHomeScreen();
+      console.log("[Settings Install UI] prompt outcome", { outcome });
       if (outcome === "accepted") {
         this.showMessage("ColorZap added to your home screen!", "success");
       }

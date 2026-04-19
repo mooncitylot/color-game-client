@@ -222,24 +222,6 @@ class NavBar extends LitElement {
         z-index: 1001;
       }
 
-      .menu-button-background {
-        z-index: 1000;
-        width: 100%;
-        height: 80px;
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        pointer-events: none;
-        background: linear-gradient(
-          to top,
-          rgba(255, 255, 255, 0.1),
-          rgba(255, 255, 255, 0.06) 65%,
-          rgba(255, 255, 255, 0)
-        );
-        backdrop-filter: blur(14px) saturate(120%);
-        -webkit-backdrop-filter: blur(14px) saturate(120%);
-      }
-
       .nav-dialog {
         position: fixed;
         inset: 0;
