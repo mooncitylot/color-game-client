@@ -275,37 +275,14 @@ class NavBar extends LitElement {
         min-height: 52px;
         padding: 12px 16px;
         border-radius: 12px;
-        background: rgba(255, 255, 255, 0.15);
-        color: white;
+        background: none;
+        color: var(--app-light-grey);
         font-size: 18px;
-        letter-spacing: 0.2px;
         cursor: pointer;
+        border: 2px solid var(--app-light-grey);
         transition:
           background-color 0.2s ease,
           border-color 0.2s ease;
-      }
-
-      .nav-dialog-close:focus-visible {
-        outline: 2px solid white;
-        outline-offset: 2px;
-      }
-
-      .nav-dialog-close:hover {
-        background: rgba(255, 255, 255, 0.22);
-        border-color: rgba(255, 255, 255, 0.5);
-      }
-
-      .nav-dialog-footer {
-        position: sticky;
-        bottom: 0;
-        padding-top: 12px;
-        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-        background: linear-gradient(
-          to top,
-          rgba(10, 20, 38, 0.72) 40%,
-          color-mix(in srgb, var(--app-primary-color) 70%, transparent) 72%,
-          rgba(0, 0, 0, 0)
-        );
       }
 
       .nav-dialog-menu {
