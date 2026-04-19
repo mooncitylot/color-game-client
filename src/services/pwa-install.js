@@ -30,9 +30,7 @@ export function isInstalledPwa() {
   if (window.matchMedia("(display-mode: standalone)").matches) {
     return true;
   }
-  const nav = /** @type {Navigator & { standalone?: boolean }} */ (
-    navigator
-  );
+  const nav = /** @type {Navigator & { standalone?: boolean }} */ (navigator);
   if (nav.standalone === true) {
     return true;
   }
@@ -43,13 +41,31 @@ export function isInstalledPwa() {
  * @returns {boolean}
  */
 export function isIosLikeDevice() {
-  const ua = window.navigator.userAgent;
+  const nav =
+    /** @type {Navigator & { userAgentData?: { platform?: string } }} */ (
+      window.navigator
+    );
+  const uaDataPlatform = nav.userAgentData?.platform?.toLowerCase();
+  if (uaDataPlatform === "ios") {
+    return true;
+  }
+  if (uaDataPlatform === "android") {
+    return false;
+  }
+
+  const ua = nav.userAgent;
   if (/iPad|iPhone|iPod/.test(ua)) {
     return true;
   }
-  return (
-    navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1
-  );
+
+  // iPadOS in desktop mode can report as MacIntel + touch points.
+  const isDesktopModeIpad =
+    nav.platform === "MacIntel" &&
+    nav.maxTouchPoints > 1 &&
+    /Safari/i.test(ua) &&
+    !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS|OPR|SamsungBrowser|Android/i.test(ua);
+
+  return isDesktopModeIpad;
 }
 
 /**

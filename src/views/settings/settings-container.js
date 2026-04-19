@@ -69,8 +69,7 @@ class SettingsContainer extends LitElement {
     const promptReady = canUseInstallPrompt();
     this.pwaInstalled = installed;
     this.installPromptReady = promptReady;
-    this.showIosInstallHelp =
-      !installed && isIosLikeDevice() && !promptReady;
+    this.showIosInstallHelp = !installed && isIosLikeDevice() && !promptReady;
     this.showGenericInstallHint =
       !installed && !isIosLikeDevice() && !promptReady;
   }
@@ -233,9 +232,8 @@ class SettingsContainer extends LitElement {
           <div class="setting-info">
             <h3>Add to home screen</h3>
             <p class="hint ios-steps">
-              On Safari: tap the Share button (square with arrow), scroll and
-              tap <strong>Add to Home Screen</strong>, then tap
-              <strong>Add</strong>.
+              On iPhone or iPad: open the browser share/menu options, then tap
+              <strong>Add to Home Screen</strong>.
             </p>
           </div>
         </div>
@@ -248,9 +246,8 @@ class SettingsContainer extends LitElement {
           <div class="setting-info">
             <h3>Add to home screen</h3>
             <p class="hint">
-              Look for an install icon in your browser’s address bar or menu,
-              or keep using this page — an install option may appear here
-              later.
+              Look for an install icon in your browser’s address bar or menu, or
+              keep using this page — an install option may appear here later.
             </p>
           </div>
         </div>
