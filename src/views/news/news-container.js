@@ -5,6 +5,11 @@ class NewsContainer extends LitElement {
   render() {
     const newsItems = [
       {
+        title: "Gameplay Update",
+        description:
+          "Deaily zaps have been reduced to 3 attempts per day. You can still buy extra zaps from the store. THANK YOU FOR YOUR ATTENTION TO THIS MATTER!",
+      },
+      {
         title: "New Feature: App notifications",
         description: "Go to settings and enable notifications!",
         path: "/settings",
@@ -39,6 +44,7 @@ class NewsContainer extends LitElement {
       display: flex;
       flex-direction: column;
       gap: 20px;
+      margin-bottom: 80px;
     }
 
     .news-item {

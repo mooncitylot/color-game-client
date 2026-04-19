@@ -153,7 +153,7 @@ class DashboardContainer extends LitElement {
     const bestScore = this.scoreHistory.best_score || 0;
     const bestAttempt = this.getBestAttempt();
 
-    const maxAttempts = this.scoreHistory.max_attempts || 5;
+    const maxAttempts = this.scoreHistory.max_attempts || 3;
 
     if (attemptsUsed === 0) {
       return html`
@@ -283,14 +283,13 @@ class DashboardContainer extends LitElement {
         flex: 1;
         padding: 40px;
         overflow-y: auto;
-        margin-bottom: 80px;
       }
 
       .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 20px;
-        margin-bottom: 24px;
+        margin-bottom: 80px;
       }
 
       .stat-card {

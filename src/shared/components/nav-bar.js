@@ -17,12 +17,14 @@ class NavBar extends LitElement {
   static properties = {
     currentPath: { type: String },
     showNav: { type: Boolean },
+    isClosing: { type: Boolean },
   };
 
   constructor() {
     super();
     this.currentPath = window.location.pathname;
     this.showNav = false;
+    this.isClosing = false;
     this._navMenuItems = [
       {
         path: routes.DASHBOARD.path,
@@ -80,6 +82,7 @@ class NavBar extends LitElement {
   handleRouteChange() {
     this.currentPath = window.location.pathname;
     this.showNav = false;
+    this.isClosing = false;
   }
 
   /**
@@ -89,20 +92,35 @@ class NavBar extends LitElement {
     if (e.key !== "Escape") {
       return;
     }
-    this.showNav = false;
+    this.handleCloseNavDialog();
   }
 
   handleCloseNavDialog() {
+    if (!this.showNav) {
+      return;
+    }
+    this.isClosing = true;
     this.showNav = false;
+  }
+
+  handleNavDialogAnimationEnd() {
+    if (!this.isClosing) {
+      return;
+    }
+    this.isClosing = false;
   }
 
   /** @param {import("lit").PropertyValues<this>} changedProperties */
   updated(changedProperties) {
     super.updated(changedProperties);
-    if (!changedProperties.has("showNav")) {
+    if (
+      !changedProperties.has("showNav") &&
+      !changedProperties.has("isClosing")
+    ) {
       return;
     }
-    if (this.showNav) {
+    const isNavVisible = this.showNav || this.isClosing;
+    if (isNavVisible) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", this.handleNavDialogKeyDown);
       return;
@@ -112,48 +130,34 @@ class NavBar extends LitElement {
   }
 
   render() {
-    return html` ${this.showNav ? this.renderNav() : this.renderSmallNav()} `;
+    const isNavVisible = this.showNav || this.isClosing;
+    return html` ${isNavVisible ? this.renderNav() : this.renderSmallNav()} `;
   }
 
   renderSmallNav() {
     return html`
-      <nav class="nav-bar">
-        <div class="nav-content">
-          <a @click="${() => (this.showNav = true)}">${menuIcon}</a>
-        </div>
-      </nav>
+      <div class="menu-button-background" aria-hidden="true"></div>
+      <button class="menu-button" @click="${() => (this.showNav = true)}">
+        Menu +
+      </button>
     `;
   }
 
   renderNav() {
+    const navDialogClass = this.isClosing
+      ? "nav-dialog nav-dialog-closing"
+      : "nav-dialog nav-dialog-opening";
+
     return html`
       <div
-        class="nav-dialog"
+        class="${navDialogClass}"
         role="dialog"
         aria-modal="true"
         aria-labelledby="nav-menu-title"
+        @animationend="${this.handleNavDialogAnimationEnd}"
       >
         <div class="nav-dialog-header">
           <h2 id="nav-menu-title" class="nav-dialog-title">Menu</h2>
-          <button
-            type="button"
-            class="nav-dialog-close"
-            aria-label="Close menu"
-            @click="${this.handleCloseNavDialog}"
-          >
-            <svg
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-              aria-hidden="true"
-            >
-              <path
-                d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"
-                fill="currentColor"
-              />
-            </svg>
-          </button>
         </div>
         <nav class="nav-dialog-menu" aria-label="Main navigation">
           ${this._navMenuItems.map(
@@ -174,6 +178,16 @@ class NavBar extends LitElement {
             `,
           )}
         </nav>
+        <div class="nav-dialog-footer">
+          <button
+            type="button"
+            class="nav-dialog-close nav-dialog-close-bottom"
+            aria-label="Close menu"
+            @click="${this.handleCloseNavDialog}"
+          >
+            Close
+          </button>
+        </div>
       </div>
     `;
   }
@@ -185,13 +199,45 @@ class NavBar extends LitElement {
   static styles = [
     globalStyles,
     css`
-      :host {
-        display: block;
+      .menu-button {
+        width: calc(100% - 72px);
+        position: fixed;
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        align-content: center;
+        gap: 4px;
+        flex: 1;
+        padding: 8px;
+        overflow: auto;
+        background-color: white;
+        color: var(--app-grey);
+        border-radius: 8px;
+        font-size: 18px;
+        border: 2px solid #e5e7eb;
+        z-index: 1001;
+      }
+
+      .menu-button-background {
+        z-index: 1000;
+        width: 100%;
+        height: 80px;
         position: fixed;
         bottom: 0;
         left: 0;
-        width: 100%;
-        z-index: 1000;
+        pointer-events: none;
+        background: linear-gradient(
+          to top,
+          rgba(255, 255, 255, 0.1),
+          rgba(255, 255, 255, 0.06) 65%,
+          rgba(255, 255, 255, 0)
+        );
+        backdrop-filter: blur(14px) saturate(120%);
+        -webkit-backdrop-filter: blur(14px) saturate(120%);
       }
 
       .nav-dialog {
@@ -201,7 +247,7 @@ class NavBar extends LitElement {
         display: flex;
         flex-direction: column;
         box-sizing: border-box;
-        padding: 16px 20px 24px;
+        padding: 16px 20px 16px;
         background-color: var(--app-primary-color);
         color: white;
         box-shadow: var(--box-shadow);
@@ -210,7 +256,7 @@ class NavBar extends LitElement {
       .nav-dialog-header {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        justify-content: center;
         padding-bottom: 16px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.2);
       }
@@ -225,12 +271,18 @@ class NavBar extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 8px;
-        border: none;
-        border-radius: 4px;
-        background: transparent;
+        width: 100%;
+        min-height: 52px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.15);
         color: white;
+        font-size: 18px;
+        letter-spacing: 0.2px;
         cursor: pointer;
+        transition:
+          background-color 0.2s ease,
+          border-color 0.2s ease;
       }
 
       .nav-dialog-close:focus-visible {
@@ -238,10 +290,29 @@ class NavBar extends LitElement {
         outline-offset: 2px;
       }
 
+      .nav-dialog-close:hover {
+        background: rgba(255, 255, 255, 0.22);
+        border-color: rgba(255, 255, 255, 0.5);
+      }
+
+      .nav-dialog-footer {
+        position: sticky;
+        bottom: 0;
+        padding-top: 12px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        background: linear-gradient(
+          to top,
+          rgba(10, 20, 38, 0.72) 40%,
+          color-mix(in srgb, var(--app-primary-color) 70%, transparent) 72%,
+          rgba(0, 0, 0, 0)
+        );
+      }
+
       .nav-dialog-menu {
         display: flex;
         flex-direction: column;
         padding-top: 16px;
+        padding-bottom: 12px;
         gap: 4px;
         flex: 1;
         overflow: auto;
@@ -300,6 +371,36 @@ class NavBar extends LitElement {
         font-size: 20px;
         font-weight: bold;
         cursor: pointer;
+      }
+
+      @keyframes menu-open {
+        from {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes menu-close {
+        from {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateY(100%);
+          opacity: 0;
+        }
+      }
+
+      .nav-dialog-opening {
+        animation: menu-open 0.25s ease-out forwards;
+      }
+
+      .nav-dialog-closing {
+        animation: menu-close 0.2s ease-in forwards;
       }
     `,
   ];

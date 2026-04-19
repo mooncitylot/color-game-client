@@ -115,7 +115,7 @@ class ColorScanner extends LitElement {
       ]);
 
       this.targetColor = targetColor;
-      this.maxAttempts = scoreHistory?.max_attempts || 5;
+      this.maxAttempts = scoreHistory?.max_attempts || 3;
       this.currentAttempt = scoreHistory?.attempts_used || 0;
       this.gameComplete = scoreHistory?.attempts_left === 0;
 
