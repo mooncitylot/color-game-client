@@ -1,5 +1,4 @@
-/** @type {Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> } | null} */
-let deferredInstallPrompt = null;
+import { pwaInstallHandler } from "pwa-install-handler";
 
 /** @type {Set<() => void>} */
 const stateListeners = new Set();
@@ -17,7 +16,7 @@ function debugLog(message, data) {
 function notifyInstallStateChanged() {
   debugLog("notifyInstallStateChanged", {
     listenerCount: stateListeners.size,
-    promptReady: deferredInstallPrompt !== null,
+    promptReady: pwaInstallHandler.canInstall(),
   });
   stateListeners.forEach((fn) => {
     fn();
@@ -25,20 +24,17 @@ function notifyInstallStateChanged() {
 }
 
 if (typeof window !== "undefined") {
-  window.addEventListener("beforeinstallprompt", (e) => {
-    debugLog("beforeinstallprompt fired", {
+  pwaInstallHandler.addListener((canInstall) => {
+    debugLog("pwaInstallHandler listener fired", {
+      canInstall,
       platform: window.navigator.platform,
       userAgent: window.navigator.userAgent,
     });
-    e.preventDefault();
-    deferredInstallPrompt = e;
-    debugLog("stored deferred install prompt");
     notifyInstallStateChanged();
   });
 
   window.addEventListener("appinstalled", () => {
     debugLog("appinstalled fired");
-    deferredInstallPrompt = null;
     notifyInstallStateChanged();
   });
 }
@@ -118,7 +114,7 @@ export function isIosLikeDevice() {
  * @returns {boolean}
  */
 export function canUseInstallPrompt() {
-  const promptReady = deferredInstallPrompt !== null;
+  const promptReady = pwaInstallHandler.canInstall();
   debugLog("canUseInstallPrompt", { promptReady });
   return promptReady;
 }
@@ -127,15 +123,14 @@ export function canUseInstallPrompt() {
  * @returns {Promise<{ outcome: string }>}
  */
 export async function promptAddToHomeScreen() {
-  if (!deferredInstallPrompt) {
+  if (!pwaInstallHandler.canInstall()) {
     debugLog("promptAddToHomeScreen unavailable: no deferred prompt");
     return { outcome: "unavailable" };
   }
-  debugLog("promptAddToHomeScreen triggering prompt()");
-  await deferredInstallPrompt.prompt();
-  const result = await deferredInstallPrompt.userChoice;
-  debugLog("promptAddToHomeScreen userChoice", result);
-  deferredInstallPrompt = null;
+  debugLog("promptAddToHomeScreen triggering handler.install()");
+  const installed = await pwaInstallHandler.install();
+  const result = { outcome: installed ? "accepted" : "dismissed" };
+  debugLog("promptAddToHomeScreen result", result);
   notifyInstallStateChanged();
   return result;
 }
