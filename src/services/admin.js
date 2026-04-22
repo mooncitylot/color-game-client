@@ -22,14 +22,25 @@ export function getAllShopItems() {
 }
 
 export function addUserCredits(userId, credits) {
-  return apiFetch(`/v1/admin/users/credits`, "POST", { userId, credits }).then(async (r) => {
-    const text = await r.text();
-    return text ? JSON.parse(text) : { success: true };
-  });
+  return apiFetch(`/v1/admin/users/credits`, "POST", { userId, credits }).then(
+    async (r) => {
+      const text = await r.text();
+      return text ? JSON.parse(text) : { success: true };
+    },
+  );
 }
 
 export function resetUserGame(userId) {
-  return apiFetch(`/v1/admin/users/${userId}/reset-game`, "POST").then(async (r) => {
+  return apiFetch(`/v1/admin/users/${userId}/reset-game`, "POST").then(
+    async (r) => {
+      const text = await r.text();
+      return text ? JSON.parse(text) : { success: true };
+    },
+  );
+}
+
+export function sendAnnouncement(payload) {
+  return apiFetch(`/v1/admin/push/send`, "POST", payload).then(async (r) => {
     const text = await r.text();
     return text ? JSON.parse(text) : { success: true };
   });

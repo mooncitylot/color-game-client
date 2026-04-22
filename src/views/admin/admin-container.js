@@ -1,11 +1,16 @@
-import { LitElement, html, css } from 'lit'
-import { getCurrentUser } from '../../services/users.js'
-import { generateDailyColor, createShopItem, resetUserGame } from '../../services/admin.js'
-import { searchFriends } from '../../services/friends.js'
-import globalStyles from '../../styles/global-styles.js'
-import { logoutUser } from '../../services/users.js'
-import { go } from '../../router/router-mixin.js'
-import { routes } from '../../router/routes.js'
+import { LitElement, html, css } from "lit";
+import { getCurrentUser } from "../../services/users.js";
+import {
+  generateDailyColor,
+  createShopItem,
+  resetUserGame,
+  sendAnnouncement,
+} from "../../services/admin.js";
+import { searchFriends } from "../../services/friends.js";
+import globalStyles from "../../styles/global-styles.js";
+import { logoutUser } from "../../services/users.js";
+import { go } from "../../router/router-mixin.js";
+import { routes } from "../../router/routes.js";
 
 class AdminContainer extends LitElement {
   static properties = {
@@ -20,210 +25,258 @@ class AdminContainer extends LitElement {
     searchResults: { type: Array },
     isSearching: { type: Boolean },
     selectedUser: { type: Object },
-  }
+    isSendingAnnouncement: { type: Boolean },
+  };
 
   constructor() {
-    super()
-    this.user = null
-    this.isGenerating = false
-    this.isCreatingItem = false
-    this.isResettingGame = false
-    this.message = ''
-    this.messageType = '' // 'success' or 'error'
-    this.showMetadataHelp = false
-    this.userSearchQuery = ''
-    this.searchResults = []
-    this.isSearching = false
-    this.selectedUser = null
+    super();
+    this.user = null;
+    this.isGenerating = false;
+    this.isCreatingItem = false;
+    this.isResettingGame = false;
+    this.message = "";
+    this.messageType = ""; // 'success' or 'error'
+    this.showMetadataHelp = false;
+    this.userSearchQuery = "";
+    this.searchResults = [];
+    this.isSearching = false;
+    this.selectedUser = null;
+    this.isSendingAnnouncement = false;
   }
 
   async routeEnter() {
     try {
-      this.user = await getCurrentUser()
-      
+      this.user = await getCurrentUser();
+
       // Check if user is admin
-      if (this.user.kind !== 'Admin') {
-        this.message = 'Access denied. Admin privileges required.'
-        this.messageType = 'error'
+      if (this.user.kind !== "Admin") {
+        this.message = "Access denied. Admin privileges required.";
+        this.messageType = "error";
       }
     } catch (error) {
-      console.error(error)
-      this.message = 'Failed to load user data'
-      this.messageType = 'error'
+      console.error(error);
+      this.message = "Failed to load user data";
+      this.messageType = "error";
     }
   }
 
   async handleLogout() {
-    await logoutUser()
-    go(routes.LOGIN.path)
+    await logoutUser();
+    go(routes.LOGIN.path);
   }
 
   handleBackToDashboard() {
-    go(routes.DASHBOARD.path)
+    go(routes.DASHBOARD.path);
   }
 
   async handleGenerateColor() {
-    if (this.isGenerating) return
-    
-    this.isGenerating = true
-    this.message = ''
-    
+    if (this.isGenerating) return;
+
+    this.isGenerating = true;
+    this.message = "";
+
     try {
-      const result = await generateDailyColor()
-      this.message = 'Daily color generated successfully!'
-      this.messageType = 'success'
-      console.log('Generated color:', result)
+      const result = await generateDailyColor();
+      this.message = "Daily color generated successfully!";
+      this.messageType = "success";
+      console.log("Generated color:", result);
     } catch (error) {
-      console.error('Failed to generate color:', error)
-      this.message = error.message || 'Failed to generate daily color'
-      this.messageType = 'error'
+      console.error("Failed to generate color:", error);
+      this.message = error.message || "Failed to generate daily color";
+      this.messageType = "error";
     } finally {
-      this.isGenerating = false
+      this.isGenerating = false;
     }
   }
 
   async handleCreateShopItem(e) {
-    e.preventDefault()
-    if (this.isCreatingItem) return
+    e.preventDefault();
+    if (this.isCreatingItem) return;
 
-    const form = e.target
-    const formData = new FormData(form)
+    const form = e.target;
+    const formData = new FormData(form);
 
     // Parse metadata JSON
-    let metadata = {}
+    let metadata = {};
     try {
-      const metadataString = formData.get('metadata')
+      const metadataString = formData.get("metadata");
       if (metadataString && metadataString.trim()) {
-        metadata = JSON.parse(metadataString)
+        metadata = JSON.parse(metadataString);
       }
     } catch (error) {
-      this.message = 'Invalid JSON in metadata field'
-      this.messageType = 'error'
-      return
+      this.message = "Invalid JSON in metadata field";
+      this.messageType = "error";
+      return;
     }
 
     // Build item data
     const itemData = {
-      itemType: formData.get('itemType'),
-      name: formData.get('name'),
-      description: formData.get('description'),
-      creditCost: parseInt(formData.get('creditCost')),
-      rarity: formData.get('rarity'),
+      itemType: formData.get("itemType"),
+      name: formData.get("name"),
+      description: formData.get("description"),
+      creditCost: parseInt(formData.get("creditCost")),
+      rarity: formData.get("rarity"),
       metadata: metadata,
-      isLimitedEdition: formData.get('isLimitedEdition') === 'on',
-      stockQuantity: formData.get('stockQuantity') 
-        ? parseInt(formData.get('stockQuantity')) 
+      isLimitedEdition: formData.get("isLimitedEdition") === "on",
+      stockQuantity: formData.get("stockQuantity")
+        ? parseInt(formData.get("stockQuantity"))
         : null,
-    }
+    };
 
-    this.isCreatingItem = true
-    this.message = ''
+    this.isCreatingItem = true;
+    this.message = "";
 
     try {
-      const result = await createShopItem(itemData)
-      this.message = `Item "${itemData.name}" created successfully!`
-      this.messageType = 'success'
-      console.log('Created item:', result)
-      
+      const result = await createShopItem(itemData);
+      this.message = `Item "${itemData.name}" created successfully!`;
+      this.messageType = "success";
+      console.log("Created item:", result);
+
       // Reset form
-      form.reset()
+      form.reset();
     } catch (error) {
-      console.error('Failed to create item:', error)
-      this.message = error.message || 'Failed to create shop item'
-      this.messageType = 'error'
+      console.error("Failed to create item:", error);
+      this.message = error.message || "Failed to create shop item";
+      this.messageType = "error";
     } finally {
-      this.isCreatingItem = false
+      this.isCreatingItem = false;
     }
   }
 
   toggleMetadataHelp() {
-    this.showMetadataHelp = !this.showMetadataHelp
+    this.showMetadataHelp = !this.showMetadataHelp;
   }
 
   async handleUserSearch(e) {
-    const query = e.target.value.trim()
-    this.userSearchQuery = query
+    const query = e.target.value.trim();
+    this.userSearchQuery = query;
 
     if (query.length < 2) {
-      this.searchResults = []
-      return
+      this.searchResults = [];
+      return;
     }
 
-    this.isSearching = true
+    this.isSearching = true;
 
     try {
-      console.log('Searching for:', query)
-      const result = await searchFriends(query)
-      console.log('Search result:', result)
-      
+      console.log("Searching for:", query);
+      const result = await searchFriends(query);
+      console.log("Search result:", result);
+
       // Handle both null and empty array cases
       if (result.results === null || result.results === undefined) {
-        this.searchResults = []
+        this.searchResults = [];
       } else {
-        this.searchResults = [...result.results]
+        this.searchResults = [...result.results];
       }
-      
-      console.log('Final search results:', this.searchResults)
+
+      console.log("Final search results:", this.searchResults);
     } catch (error) {
-      console.error('Failed to search users:', error)
-      console.error('Error details:', error.message, error.stack)
-      this.searchResults = []
+      console.error("Failed to search users:", error);
+      console.error("Error details:", error.message, error.stack);
+      this.searchResults = [];
     } finally {
-      this.isSearching = false
+      this.isSearching = false;
     }
   }
 
   handleSelectUser(user) {
-    this.selectedUser = user
-    this.searchResults = []
-    this.userSearchQuery = ''
+    this.selectedUser = user;
+    this.searchResults = [];
+    this.userSearchQuery = "";
   }
 
   handleClearSelectedUser() {
-    this.selectedUser = null
+    this.selectedUser = null;
   }
 
   async handleResetUserGame(e) {
-    e.preventDefault()
-    if (this.isResettingGame || !this.selectedUser) return
+    e.preventDefault();
+    if (this.isResettingGame || !this.selectedUser) return;
 
-    this.isResettingGame = true
-    this.message = ''
+    this.isResettingGame = true;
+    this.message = "";
 
     try {
-      await resetUserGame(this.selectedUser.userId)
-      this.message = `Game reset successfully for ${this.selectedUser.username}`
-      this.messageType = 'success'
-      
+      await resetUserGame(this.selectedUser.userId);
+      this.message = `Game reset successfully for ${this.selectedUser.username}`;
+      this.messageType = "success";
+
       // Clear selection
-      this.selectedUser = null
+      this.selectedUser = null;
     } catch (error) {
-      console.error('Failed to reset user game:', error)
-      this.message = error.message || 'Failed to reset user game'
-      this.messageType = 'error'
+      console.error("Failed to reset user game:", error);
+      this.message = error.message || "Failed to reset user game";
+      this.messageType = "error";
     } finally {
-      this.isResettingGame = false
+      this.isResettingGame = false;
+    }
+  }
+
+  async handleSendAnnouncement(e) {
+    e.preventDefault();
+    if (this.isSendingAnnouncement) return;
+
+    const form = e.target;
+    const formData = new FormData(form);
+
+    const title = (formData.get("announcementTitle") || "").trim();
+    const body = (formData.get("announcementBody") || "").trim();
+    const icon = (formData.get("announcementIcon") || "").trim();
+
+    if (!title || !body) {
+      this.message = "Announcement title and message are required";
+      this.messageType = "error";
+      return;
+    }
+
+    this.isSendingAnnouncement = true;
+    this.message = "";
+
+    try {
+      const payload = {
+        title,
+        body,
+        ...(icon ? { icon } : {}),
+      };
+
+      const result = await sendAnnouncement(payload);
+      const sentCount = typeof result?.sent === "number" ? result.sent : 0;
+
+      this.message = `Announcement sent to ${sentCount} subscriber${sentCount === 1 ? "" : "s"}`;
+      this.messageType = "success";
+      form.reset();
+    } catch (error) {
+      console.error("Failed to send announcement:", error);
+      this.message = error.message || "Failed to send announcement";
+      this.messageType = "error";
+    } finally {
+      this.isSendingAnnouncement = false;
     }
   }
 
   render() {
     // Show access denied if not admin
-    if (this.user && this.user.kind !== 'Admin') {
+    if (this.user && this.user.kind !== "Admin") {
       return html`
         <div class="admin">
           <header>
             <h1>Admin Panel</h1>
-            <button @click=${this.handleBackToDashboard}>Back to Dashboard</button>
+            <button @click=${this.handleBackToDashboard}>
+              Back to Dashboard
+            </button>
           </header>
           <div class="content">
             <div class="error-card">
               <h2>Access Denied</h2>
               <p>You need admin privileges to access this page.</p>
-              <button @click=${this.handleBackToDashboard}>Go to Dashboard</button>
+              <button @click=${this.handleBackToDashboard}>
+                Go to Dashboard
+              </button>
             </div>
           </div>
         </div>
-      `
+      `;
     }
 
     return html`
@@ -250,97 +303,135 @@ class AdminContainer extends LitElement {
                         <p>${this.message}</p>
                       </div>
                     `
-                  : ''}
+                  : ""}
 
                 <div class="admin-section">
                   <h3>Daily Color Management</h3>
-                  <p>Manually generate the daily color for today. This will override any existing color for the current day.</p>
-                  
-                  <button 
-                    class="generate-button" 
+                  <p>
+                    Manually generate the daily color for today. This will
+                    override any existing color for the current day.
+                  </p>
+
+                  <button
+                    class="generate-button"
                     @click=${this.handleGenerateColor}
                     ?disabled=${this.isGenerating}
                   >
-                    ${this.isGenerating ? 'Generating...' : 'Generate Daily Color'}
+                    ${this.isGenerating
+                      ? "Generating..."
+                      : "Generate Daily Color"}
                   </button>
                 </div>
 
                 <div class="admin-section">
                   <h3>Reset User Game</h3>
-                  <p>Reset a user's game for today. This will remove their tries for the day and reset their remaining tries to 5.</p>
-                  
-                  <form class="reset-game-form" @submit=${this.handleResetUserGame}>
-                    ${!this.selectedUser ? html`
-                      <div class="form-group">
-                        <label for="userSearch">Search User by Username *</label>
-                        <input 
-                          type="text" 
-                          id="userSearch" 
-                          .value=${this.userSearchQuery}
-                          @input=${this.handleUserSearch}
-                          placeholder="Type to search..."
-                          autocomplete="off"
-                        />
-                        
-                        ${this.isSearching ? html`
-                          <div class="search-status">Searching...</div>
-                        ` : ''}
+                  <p>
+                    Reset a user's game for today. This will remove their tries
+                    for the day and reset their remaining tries to 5.
+                  </p>
 
-                        ${this.searchResults.length > 0 ? html`
-                          <div class="search-results">
-                            ${this.searchResults.map(user => html`
-                              <div class="search-result-item" @click=${() => this.handleSelectUser(user)}>
-                                <div class="user-info">
-                                  <strong>${user.username}</strong>
-                                  <span class="user-stats">Level ${user.level} • ${user.points} pts</span>
-                                </div>
-                              </div>
-                            `)}
+                  <form
+                    class="reset-game-form"
+                    @submit=${this.handleResetUserGame}
+                  >
+                    ${!this.selectedUser
+                      ? html`
+                          <div class="form-group">
+                            <label for="userSearch"
+                              >Search User by Username *</label
+                            >
+                            <input
+                              type="text"
+                              id="userSearch"
+                              .value=${this.userSearchQuery}
+                              @input=${this.handleUserSearch}
+                              placeholder="Type to search..."
+                              autocomplete="off"
+                            />
+
+                            ${this.isSearching
+                              ? html`
+                                  <div class="search-status">Searching...</div>
+                                `
+                              : ""}
+                            ${this.searchResults.length > 0
+                              ? html`
+                                  <div class="search-results">
+                                    ${this.searchResults.map(
+                                      (user) => html`
+                                        <div
+                                          class="search-result-item"
+                                          @click=${() =>
+                                            this.handleSelectUser(user)}
+                                        >
+                                          <div class="user-info">
+                                            <strong>${user.username}</strong>
+                                            <span class="user-stats"
+                                              >Level ${user.level} •
+                                              ${user.points} pts</span
+                                            >
+                                          </div>
+                                        </div>
+                                      `,
+                                    )}
+                                  </div>
+                                `
+                              : ""}
+                            ${!this.isSearching &&
+                            this.userSearchQuery.length >= 2 &&
+                            this.searchResults.length === 0
+                              ? html`
+                                  <div class="no-results">No users found</div>
+                                `
+                              : ""}
                           </div>
-                        ` : ''}
+                        `
+                      : html`
+                          <div class="selected-user">
+                            <div class="selected-user-info">
+                              <strong>${this.selectedUser.username}</strong>
+                              <span
+                                >Level ${this.selectedUser.level} •
+                                ${this.selectedUser.points} pts</span
+                              >
+                            </div>
+                            <button
+                              type="button"
+                              class="clear-button"
+                              @click=${this.handleClearSelectedUser}
+                            >
+                              Change User
+                            </button>
+                          </div>
+                        `}
 
-                        ${!this.isSearching && this.userSearchQuery.length >= 2 && this.searchResults.length === 0 ? html`
-                          <div class="no-results">No users found</div>
-                        ` : ''}
-                      </div>
-                    ` : html`
-                      <div class="selected-user">
-                        <div class="selected-user-info">
-                          <strong>${this.selectedUser.username}</strong>
-                          <span>Level ${this.selectedUser.level} • ${this.selectedUser.points} pts</span>
-                        </div>
-                        <button 
-                          type="button" 
-                          class="clear-button"
-                          @click=${this.handleClearSelectedUser}
-                        >
-                          Change User
-                        </button>
-                      </div>
-                    `}
-
-                    <button 
-                      type="submit" 
+                    <button
+                      type="submit"
                       class="reset-button"
                       ?disabled=${this.isResettingGame || !this.selectedUser}
                     >
-                      ${this.isResettingGame ? 'Resetting...' : 'Reset User Game'}
+                      ${this.isResettingGame
+                        ? "Resetting..."
+                        : "Reset User Game"}
                     </button>
                   </form>
                 </div>
 
                 <div class="admin-section">
                   <h3>Create Shop Item</h3>
-                  <p>Add a new item to the shop catalog. Users can purchase these with their credits.</p>
-                  
+                  <p>
+                    Add a new item to the shop catalog. Users can purchase these
+                    with their credits.
+                  </p>
+
                   <form class="shop-form" @submit=${this.handleCreateShopItem}>
                     <div class="form-row">
                       <div class="form-group">
                         <label for="name">Item Name *</label>
-                        <input 
-                          type="text" 
-                          id="name" 
-                          name="name" 
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
                           required
                           placeholder="e.g., Double Points Powerup"
                         />
@@ -359,10 +450,10 @@ class AdminContainer extends LitElement {
 
                     <div class="form-group">
                       <label for="description">Description *</label>
-                      <textarea 
-                        id="description" 
-                        name="description" 
-                        rows="3" 
+                      <textarea
+                        id="description"
+                        name="description"
+                        rows="3"
                         required
                         placeholder="Describe what this item does..."
                       ></textarea>
@@ -371,11 +462,11 @@ class AdminContainer extends LitElement {
                     <div class="form-row">
                       <div class="form-group">
                         <label for="creditCost">Credit Cost *</label>
-                        <input 
-                          type="number" 
-                          id="creditCost" 
-                          name="creditCost" 
-                          min="0" 
+                        <input
+                          type="number"
+                          id="creditCost"
+                          name="creditCost"
+                          min="0"
                           required
                           placeholder="100"
                         />
@@ -395,9 +486,9 @@ class AdminContainer extends LitElement {
                     <div class="form-row">
                       <div class="form-group checkbox-group">
                         <label>
-                          <input 
-                            type="checkbox" 
-                            id="isLimitedEdition" 
+                          <input
+                            type="checkbox"
+                            id="isLimitedEdition"
                             name="isLimitedEdition"
                           />
                           <span>Limited Edition</span>
@@ -406,10 +497,10 @@ class AdminContainer extends LitElement {
 
                       <div class="form-group">
                         <label for="stockQuantity">Stock Quantity</label>
-                        <input 
-                          type="number" 
-                          id="stockQuantity" 
-                          name="stockQuantity" 
+                        <input
+                          type="number"
+                          id="stockQuantity"
+                          name="stockQuantity"
                           min="1"
                           placeholder="Leave empty for unlimited"
                         />
@@ -419,54 +510,123 @@ class AdminContainer extends LitElement {
                     <div class="form-group">
                       <label for="metadata">
                         Metadata (JSON)
-                        <button 
-                          type="button" 
+                        <button
+                          type="button"
                           class="help-button"
                           @click=${this.toggleMetadataHelp}
                         >
-                          ${this.showMetadataHelp ? 'Hide' : 'Show'} Examples
+                          ${this.showMetadataHelp ? "Hide" : "Show"} Examples
                         </button>
                       </label>
-                      <textarea 
-                        id="metadata" 
-                        name="metadata" 
+                      <textarea
+                        id="metadata"
+                        name="metadata"
                         rows="6"
                         placeholder='{"icon_url": "/assets/items/icon.png"}'
                       ></textarea>
                     </div>
 
-                    ${this.showMetadataHelp ? html`
-                      <div class="metadata-help">
-                        <h4>Metadata Examples:</h4>
-                        
-                        <div class="example">
-                          <strong>Powerup:</strong>
-                          <pre>{"icon_url": "/assets/powerups/double.png", "duration_seconds": 60, "multiplier": 2.0}</pre>
-                        </div>
+                    ${this.showMetadataHelp
+                      ? html`
+                          <div class="metadata-help">
+                            <h4>Metadata Examples:</h4>
 
-                        <div class="example">
-                          <strong>Badge:</strong>
-                          <pre>{"icon_url": "/assets/badges/champion.png", "display_order": 1}</pre>
-                        </div>
+                            <div class="example">
+                              <strong>Powerup:</strong>
+                              <pre>
+{"icon_url": "/assets/powerups/double.png", "duration_seconds": 60, "multiplier": 2.0}</pre
+                              >
+                            </div>
 
-                        <div class="example">
-                          <strong>Avatar Hat:</strong>
-                          <pre>{"icon_url": "/assets/hats/wizard.png", "layer": "head", "color_customizable": true}</pre>
-                        </div>
+                            <div class="example">
+                              <strong>Badge:</strong>
+                              <pre>
+{"icon_url": "/assets/badges/champion.png", "display_order": 1}</pre
+                              >
+                            </div>
 
-                        <div class="example">
-                          <strong>Avatar Skin:</strong>
-                          <pre>{"icon_url": "/assets/skins/rainbow.png", "animated": true}</pre>
-                        </div>
-                      </div>
-                    ` : ''}
+                            <div class="example">
+                              <strong>Avatar Hat:</strong>
+                              <pre>
+{"icon_url": "/assets/hats/wizard.png", "layer": "head", "color_customizable": true}</pre
+                              >
+                            </div>
 
-                    <button 
-                      type="submit" 
+                            <div class="example">
+                              <strong>Avatar Skin:</strong>
+                              <pre>
+{"icon_url": "/assets/skins/rainbow.png", "animated": true}</pre
+                              >
+                            </div>
+                          </div>
+                        `
+                      : ""}
+
+                    <button
+                      type="submit"
                       class="submit-button"
                       ?disabled=${this.isCreatingItem}
                     >
-                      ${this.isCreatingItem ? 'Creating...' : 'Create Item'}
+                      ${this.isCreatingItem ? "Creating..." : "Create Item"}
+                    </button>
+                  </form>
+                </div>
+
+                <div class="admin-section">
+                  <h3>Send Announcement</h3>
+                  <p>
+                    Send a push notification to every user currently subscribed
+                    to notifications.
+                  </p>
+
+                  <form
+                    class="announcement-form"
+                    @submit=${this.handleSendAnnouncement}
+                  >
+                    <div class="form-group">
+                      <label for="announcementTitle"
+                        >Notification Title *</label
+                      >
+                      <input
+                        type="text"
+                        id="announcementTitle"
+                        name="announcementTitle"
+                        required
+                        maxlength="120"
+                        placeholder="e.g., New Daily Challenge is live"
+                      />
+                    </div>
+
+                    <div class="form-group">
+                      <label for="announcementBody">Message *</label>
+                      <textarea
+                        id="announcementBody"
+                        name="announcementBody"
+                        rows="4"
+                        required
+                        maxlength="300"
+                        placeholder="Write your announcement message here..."
+                      ></textarea>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="announcementIcon">Icon URL (Optional)</label>
+                      <input
+                        type="text"
+                        id="announcementIcon"
+                        name="announcementIcon"
+                        placeholder="/icons/icon.svg"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      class="announcement-button"
+                      ?disabled=${this.isSendingAnnouncement}
+                    >
+                      ${this.isSendingAnnouncement
+                        ? "Sending..."
+                        : "Send Announcement"}
                     </button>
                   </form>
                 </div>
@@ -481,7 +641,7 @@ class AdminContainer extends LitElement {
             : html`<loading-spinner></loading-spinner>`}
         </div>
       </div>
-    `
+    `;
   }
 
   static styles = [
@@ -786,6 +946,10 @@ class AdminContainer extends LitElement {
         max-width: 800px;
       }
 
+      .announcement-form {
+        max-width: 700px;
+      }
+
       .form-row {
         display: grid;
         grid-template-columns: 1fr 1fr;
@@ -936,6 +1100,37 @@ class AdminContainer extends LitElement {
         opacity: 0.6;
       }
 
+      .announcement-button {
+        width: 100%;
+        background-color: #7c3aed;
+        color: white;
+        border: none;
+        padding: 16px 32px;
+        font-size: 16px;
+        font-weight: bold;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        margin-top: 8px;
+      }
+
+      .announcement-button:hover:not(:disabled) {
+        background-color: #6d28d9;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .announcement-button:active:not(:disabled) {
+        transform: translateY(0);
+      }
+
+      .announcement-button:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+
       @media (max-width: 768px) {
         .form-row {
           grid-template-columns: 1fr;
@@ -950,8 +1145,8 @@ class AdminContainer extends LitElement {
         }
       }
     `,
-  ]
+  ];
 }
 
-customElements.define('admin-container', AdminContainer)
-export default AdminContainer
+customElements.define("admin-container", AdminContainer);
+export default AdminContainer;
