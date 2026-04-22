@@ -122,7 +122,7 @@ class DashboardContainer extends LitElement {
   }
 
   async handleInstallApp() {
-    if (this.installLoading || !this.installPromptReady) {
+    if (this.installLoading) {
       return;
     }
     this.installLoading = true;
@@ -130,9 +130,6 @@ class DashboardContainer extends LitElement {
       console.log("[Dashboard Install UI] handleInstallApp click");
       const result = await promptAddToHomeScreen();
       console.log("[Dashboard Install UI] prompt result", result);
-      if (result.outcome === "guided") {
-        alert("Install guide opened.");
-      }
     } catch (err) {
       console.error("Install prompt error:", err);
     } finally {
@@ -162,25 +159,32 @@ class DashboardContainer extends LitElement {
                 <div class="welcome-card">
                   <h2>Welcome, ${this.user.username}!</h2>
                   <p>Uncover today's color to earn points!</p>
-                  <a class="news-link" href="/news">See what's new</a>
-                  ${!this.pwaInstalled &&
-                  (this.installPromptReady ||
-                    (this.iosLikeDevice && this.manualInstallGuideAvailable))
-                    ? html`
-                        <button
-                          class="install-button"
-                          type="button"
-                          @click=${this.handleInstallApp}
-                          ?disabled=${this.installLoading}
-                        >
-                          ${this.installLoading
-                            ? "Opening install prompt..."
-                            : this.installPromptReady
-                              ? "Install"
-                              : "Install Guide"}
-                        </button>
-                      `
-                    : ""}
+                  <div class="small-button-group">
+                    <button
+                      class="install-button"
+                      @click=${() => go(routes.NEWS.path)}
+                    >
+                      News
+                    </button>
+                    ${!this.pwaInstalled &&
+                    (this.installPromptReady ||
+                      (this.iosLikeDevice && this.manualInstallGuideAvailable))
+                      ? html`
+                          <button
+                            class="install-button"
+                            type="button"
+                            @click=${this.handleInstallApp}
+                            ?disabled=${this.installLoading}
+                          >
+                            ${this.installLoading
+                              ? "Opening install prompt..."
+                              : this.installPromptReady
+                                ? "Install App"
+                                : "Install App"}
+                          </button>
+                        `
+                      : ""}
+                  </div>
                 </div>
 
                 <div class="game-status-card">
@@ -455,6 +459,15 @@ class DashboardContainer extends LitElement {
         color: var(--app-primary-color);
       }
 
+      .small-button-group {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        gap: 8px;
+        margin-top: 16px;
+      }
+
       .attempts-info {
         font-size: 16px;
         margin: 0;
@@ -621,6 +634,7 @@ class DashboardContainer extends LitElement {
       }
 
       .install-button {
+        width: 100%;
         margin-top: 16px;
         background-color: var(--app-primary-color);
         color: white;
