@@ -10,9 +10,6 @@ import { getDailyColor } from "../../services/colors.js";
 import { winnerIcon } from "../../shared/assets/icons.js";
 import {
   isInstalledPwa,
-  isIosLikeDevice,
-  canUseInstallPrompt,
-  canShowManualInstallGuide,
   promptAddToHomeScreen,
   subscribePwaInstallState,
 } from "../../services/pwa-install.js";
@@ -25,9 +22,6 @@ class DashboardContainer extends LitElement {
     friendSummary: { type: Object },
     dailyChallenge: { type: Object },
     pwaInstalled: { type: Boolean },
-    iosLikeDevice: { type: Boolean },
-    manualInstallGuideAvailable: { type: Boolean },
-    installPromptReady: { type: Boolean },
     installLoading: { type: Boolean },
   };
 
@@ -39,9 +33,6 @@ class DashboardContainer extends LitElement {
     this.friendSummary = { friends: 0, requests: 0 };
     this.dailyChallenge = null;
     this.pwaInstalled = false;
-    this.iosLikeDevice = false;
-    this.manualInstallGuideAvailable = false;
-    this.installPromptReady = false;
     this.installLoading = false;
     /** @type {(() => void) | undefined} */
     this._unsubscribePwaInstall = undefined;
@@ -63,14 +54,8 @@ class DashboardContainer extends LitElement {
 
   syncPwaInstallUi() {
     this.pwaInstalled = isInstalledPwa();
-    this.iosLikeDevice = isIosLikeDevice();
-    this.manualInstallGuideAvailable = canShowManualInstallGuide();
-    this.installPromptReady = canUseInstallPrompt();
     console.log("[Dashboard Install UI] syncPwaInstallUi", {
       pwaInstalled: this.pwaInstalled,
-      iosLikeDevice: this.iosLikeDevice,
-      manualInstallGuideAvailable: this.manualInstallGuideAvailable,
-      installPromptReady: this.installPromptReady,
       userAgent: navigator.userAgent,
       platform: navigator.platform,
     });
@@ -166,9 +151,7 @@ class DashboardContainer extends LitElement {
                     >
                       News
                     </button>
-                    ${!this.pwaInstalled &&
-                    (this.installPromptReady ||
-                      (this.iosLikeDevice && this.manualInstallGuideAvailable))
+                    ${!this.pwaInstalled
                       ? html`
                           <button
                             class="install-button"
@@ -177,10 +160,8 @@ class DashboardContainer extends LitElement {
                             ?disabled=${this.installLoading}
                           >
                             ${this.installLoading
-                              ? "Opening install prompt..."
-                              : this.installPromptReady
-                                ? "Install App"
-                                : "Install App"}
+                              ? "Opening install guide..."
+                              : "Install Guide"}
                           </button>
                         `
                       : ""}

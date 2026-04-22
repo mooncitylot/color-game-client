@@ -1,9 +1,6 @@
-import { pwaInstallHandler } from "pwa-install-handler";
-
 /** @type {Set<() => void>} */
 const stateListeners = new Set();
 let installInitStarted = false;
-let addToHomeScreenInstance = null;
 
 const PWA_DEBUG_PREFIX = "[PWA Install]";
 
@@ -15,42 +12,10 @@ function debugLog(message, data) {
   console.log(PWA_DEBUG_PREFIX, message);
 }
 
-function getAddToHomeScreenFactory() {
-  const w = /** @type {Window & { AddToHomeScreen?: Function }} */ (window);
-  return w.AddToHomeScreen;
-}
-
-function ensureAddToHomeScreenInstance() {
-  if (addToHomeScreenInstance) {
-    return addToHomeScreenInstance;
-  }
-
-  const factory = getAddToHomeScreenFactory();
-  if (!factory) {
-    debugLog("AddToHomeScreen global not loaded");
-    return null;
-  }
-
-  addToHomeScreenInstance = factory({
-    appName: "ColorZap",
-    appNameDisplay: "standalone",
-    appIconUrl: "/apple-touch-icon.png",
-    assetUrl:
-      "https://cdn.jsdelivr.net/gh/philfung/add-to-homescreen@3.5/dist/assets/img/",
-    maxModalDisplayCount: -1,
-    displayOptions: { showMobile: true, showDesktop: false },
-    allowClose: true,
-    showArrow: true,
-  });
-
-  debugLog("AddToHomeScreen instance created");
-  return addToHomeScreenInstance;
-}
-
 function notifyInstallStateChanged() {
   debugLog("notifyInstallStateChanged", {
     listenerCount: stateListeners.size,
-    promptReady: pwaInstallHandler.canInstall(),
+    installed: isInstalledPwa(),
   });
   stateListeners.forEach((fn) => {
     fn();
@@ -124,15 +89,6 @@ export function initializePwaInstallSystem() {
 if (typeof window !== "undefined") {
   initializePwaInstallSystem();
 
-  pwaInstallHandler.addListener((canInstall) => {
-    debugLog("pwaInstallHandler listener fired", {
-      canInstall,
-      platform: window.navigator.platform,
-      userAgent: window.navigator.userAgent,
-    });
-    notifyInstallStateChanged();
-  });
-
   window.addEventListener("appinstalled", () => {
     debugLog("appinstalled fired");
     notifyInstallStateChanged();
@@ -165,87 +121,30 @@ export function isInstalledPwa() {
 /**
  * @returns {boolean}
  */
-export function isIosLikeDevice() {
-  const nav =
-    /** @type {Navigator & { userAgentData?: { platform?: string } }} */ (
-      window.navigator
-    );
-  const uaDataPlatform = nav.userAgentData?.platform?.toLowerCase();
-  if (uaDataPlatform === "ios") {
-    debugLog("isIosLikeDevice=true via userAgentData.platform", {
-      uaDataPlatform,
-    });
-    return true;
-  }
-  if (uaDataPlatform === "android") {
-    debugLog("isIosLikeDevice=false via userAgentData.platform", {
-      uaDataPlatform,
-    });
-    return false;
-  }
-
-  const ua = nav.userAgent;
-  if (/iPad|iPhone|iPod/.test(ua)) {
-    debugLog("isIosLikeDevice=true via userAgent match", {
-      platform: nav.platform,
-      maxTouchPoints: nav.maxTouchPoints,
-    });
-    return true;
-  }
-
-  // iPadOS in desktop mode can report as MacIntel + touch points.
-  const isDesktopModeIpad =
-    nav.platform === "MacIntel" &&
-    nav.maxTouchPoints > 1 &&
-    /Safari/i.test(ua) &&
-    !/Chrome|CriOS|FxiOS|EdgiOS|OPiOS|OPR|SamsungBrowser|Android/i.test(ua);
-
-  debugLog("isIosLikeDevice fallback result", {
-    isDesktopModeIpad,
-    platform: nav.platform,
-    maxTouchPoints: nav.maxTouchPoints,
-    userAgent: ua,
-  });
-
-  return isDesktopModeIpad;
-}
-
-/**
- * @returns {boolean}
- */
 export function canUseInstallPrompt() {
-  const promptReady = pwaInstallHandler.canInstall();
-  debugLog("canUseInstallPrompt", { promptReady });
-  return promptReady;
+  return false;
 }
 
 /**
  * @returns {boolean}
  */
 export function canShowManualInstallGuide() {
-  const available = Boolean(getAddToHomeScreenFactory()) && !isInstalledPwa();
+  const available = !isInstalledPwa();
   debugLog("canShowManualInstallGuide", { available });
   return available;
 }
 
 /**
- * @param {string} locale
  * @returns {boolean}
  */
-export function showManualInstallGuide(locale = "en") {
+export function showManualInstallGuide() {
   if (isInstalledPwa()) {
     debugLog("showManualInstallGuide skipped: already installed");
     return false;
   }
 
-  const instance = ensureAddToHomeScreenInstance();
-  if (!instance || typeof instance.show !== "function") {
-    debugLog("showManualInstallGuide unavailable: no library instance");
-    return false;
-  }
-
-  debugLog("showManualInstallGuide", { locale });
-  instance.show(locale);
+  debugLog("showManualInstallGuide: dispatching open dialog event");
+  window.dispatchEvent(new CustomEvent("open-install-guide-dialog"));
   return true;
 }
 
@@ -253,16 +152,9 @@ export function showManualInstallGuide(locale = "en") {
  * @returns {Promise<{ outcome: string }>}
  */
 export async function promptAddToHomeScreen() {
-  if (!pwaInstallHandler.canInstall()) {
-    debugLog("promptAddToHomeScreen unavailable: no deferred prompt");
-    const shown = showManualInstallGuide();
-    return { outcome: shown ? "guided" : "unavailable" };
-  }
-  debugLog("promptAddToHomeScreen triggering handler.install()");
-  const installed = await pwaInstallHandler.install();
-  const result = { outcome: installed ? "accepted" : "dismissed" };
+  const shown = showManualInstallGuide();
+  const result = { outcome: shown ? "guided" : "unavailable" };
   debugLog("promptAddToHomeScreen result", result);
-  notifyInstallStateChanged();
   return result;
 }
 

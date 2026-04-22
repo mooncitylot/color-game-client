@@ -12,11 +12,7 @@ import {
 } from "../../services/push-notifications.js";
 import {
   isInstalledPwa,
-  isIosLikeDevice,
-  canUseInstallPrompt,
-  canShowManualInstallGuide,
   promptAddToHomeScreen,
-  showManualInstallGuide,
   subscribePwaInstallState,
 } from "../../services/pwa-install.js";
 
@@ -29,10 +25,6 @@ class SettingsContainer extends LitElement {
     message: { type: String },
     messageType: { type: String }, // 'success' or 'error'
     pwaInstalled: { type: Boolean },
-    installPromptReady: { type: Boolean },
-    showIosInstallHelp: { type: Boolean },
-    showGenericInstallHint: { type: Boolean },
-    manualInstallGuideAvailable: { type: Boolean },
     installLoading: { type: Boolean },
   };
 
@@ -45,10 +37,6 @@ class SettingsContainer extends LitElement {
     this.message = "";
     this.messageType = "";
     this.pwaInstalled = false;
-    this.installPromptReady = false;
-    this.showIosInstallHelp = false;
-    this.showGenericInstallHint = false;
-    this.manualInstallGuideAvailable = false;
     this.installLoading = false;
     /** @type {(() => void) | undefined} */
     this._unsubscribePwaInstall = undefined;
@@ -69,23 +57,10 @@ class SettingsContainer extends LitElement {
   }
 
   syncPwaInstallUi() {
-    const installed = isInstalledPwa();
-    const promptReady = canUseInstallPrompt();
-    const iosLike = isIosLikeDevice();
-    const manualGuideAvailable = canShowManualInstallGuide();
-    this.pwaInstalled = installed;
-    this.installPromptReady = promptReady;
-    this.showIosInstallHelp = !installed && iosLike && !promptReady;
-    this.showGenericInstallHint = !installed && !iosLike && !promptReady;
-    this.manualInstallGuideAvailable = manualGuideAvailable;
+    this.pwaInstalled = isInstalledPwa();
 
     console.log("[Settings Install UI] syncPwaInstallUi", {
-      installed,
-      promptReady,
-      iosLike,
-      manualGuideAvailable,
-      showIosInstallHelp: this.showIosInstallHelp,
-      showGenericInstallHint: this.showGenericInstallHint,
+      installed: this.pwaInstalled,
       userAgent: navigator.userAgent,
       platform: navigator.platform,
       maxTouchPoints: navigator.maxTouchPoints,
@@ -202,9 +177,7 @@ class SettingsContainer extends LitElement {
       console.log("[Settings Install UI] handleAddToHomeScreen click");
       const { outcome } = await promptAddToHomeScreen();
       console.log("[Settings Install UI] prompt outcome", { outcome });
-      if (outcome === "accepted") {
-        this.showMessage("ColorZap added to your home screen!", "success");
-      } else if (outcome === "guided") {
+      if (outcome === "guided") {
         this.showMessage("Install guide opened", "success");
       }
     } catch (err) {
@@ -227,78 +200,24 @@ class SettingsContainer extends LitElement {
       `;
     }
 
-    if (this.installPromptReady) {
-      return html`
-        <div class="setting-item install-pwa-block">
-          <div class="setting-info">
-            <h3>Add to home screen</h3>
-            <p>Install ColorZap for quick access like a native app.</p>
-          </div>
-          <div class="setting-controls">
-            <button
-              class="btn btn-primary"
-              type="button"
-              @click=${this.handleAddToHomeScreen}
-              ?disabled=${this.installLoading}
-            >
-              ${this.installLoading ? "Please wait…" : "Add to home screen"}
-            </button>
-          </div>
+    return html`
+      <div class="setting-item install-pwa-block">
+        <div class="setting-info">
+          <h3>Add to home screen</h3>
+          <p>Need help installing? Open the install guide.</p>
         </div>
-      `;
-    }
-
-    if (this.showIosInstallHelp) {
-      return html`
-        <div class="setting-item install-pwa-block install-ios-hint">
-          <div class="setting-info">
-            <h3>Add to home screen</h3>
-            <p class="hint ios-steps">
-              On iPhone or iPad: open the browser share/menu options, then tap
-              <strong>Add to Home Screen</strong>.
-            </p>
-            ${this.manualInstallGuideAvailable
-              ? html`
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    @click=${() => showManualInstallGuide("en")}
-                  >
-                    Open Install Guide
-                  </button>
-                `
-              : ""}
-          </div>
+        <div class="setting-controls">
+          <button
+            class="btn btn-primary"
+            type="button"
+            @click=${this.handleAddToHomeScreen}
+            ?disabled=${this.installLoading}
+          >
+            ${this.installLoading ? "Please wait..." : "Install Guide"}
+          </button>
         </div>
-      `;
-    }
-
-    if (this.showGenericInstallHint) {
-      return html`
-        <div class="setting-item install-pwa-block">
-          <div class="setting-info">
-            <h3>Add to home screen</h3>
-            <p class="hint">
-              Look for an install icon in your browser’s address bar or menu, or
-              keep using this page — an install option may appear here later.
-            </p>
-            ${this.manualInstallGuideAvailable
-              ? html`
-                  <button
-                    class="btn btn-primary"
-                    type="button"
-                    @click=${() => showManualInstallGuide("en")}
-                  >
-                    Open Install Guide
-                  </button>
-                `
-              : ""}
-          </div>
-        </div>
-      `;
-    }
-
-    return null;
+      </div>
+    `;
   }
 
   renderPushSettings() {
@@ -488,14 +407,6 @@ class SettingsContainer extends LitElement {
         align-items: flex-start;
       }
 
-      .install-ios-hint .setting-info {
-        width: 100%;
-      }
-
-      .ios-steps {
-        line-height: 1.5;
-      }
-
       .setting-info {
         flex: 1;
       }
@@ -584,31 +495,31 @@ class SettingsContainer extends LitElement {
       }
 
       .btn-primary {
-        background: #4caf50;
+        background: var(--app-primary-color);
         color: white;
       }
 
       .btn-primary:hover:not(:disabled) {
-        background: #45a049;
+        background: var(--app-primary-color-hover);
       }
 
       .btn-secondary {
-        background: #dc3545;
+        background: var(--app-secondary-color);
         color: white;
       }
 
       .btn-secondary:hover:not(:disabled) {
-        background: #c82333;
+        background: var(--app-secondary-color-hover);
       }
 
       .btn-outline {
         background: transparent;
-        border: 2px solid #4caf50;
-        color: #4caf50;
+        border: 2px solid var(--app-primary-color);
+        color: var(--app-primary-color);
       }
 
       .btn-outline:hover:not(:disabled) {
-        background: #4caf50;
+        background: var(--app-primary-color);
         color: white;
       }
 

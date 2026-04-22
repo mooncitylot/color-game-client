@@ -3,6 +3,7 @@ import routerMixin, { VIEW_ROUTE_ENTER_CLASS } from "./router/router-mixin.js";
 import globalStyles from "./styles/global-styles.js";
 import { getRouteByPath } from "./router/routes.js";
 import "../src/shared/components/nav-bar.js";
+import "../src/shared/components/install-guide-dialog.js";
 import { initializePwaInstallSystem } from "./services/pwa-install.js";
 
 class AppEnterElement extends routerMixin(LitElement) {
@@ -46,6 +47,7 @@ class AppEnterElement extends routerMixin(LitElement) {
     return html`
       <slot></slot>
       ${this.currentRoute?.showNav ? html` <nav-bar></nav-bar> ` : null}
+      <install-guide-dialog></install-guide-dialog>
     `;
   }
 
