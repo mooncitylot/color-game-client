@@ -32,6 +32,8 @@ class AppEnterElement extends routerMixin(LitElement) {
     // Update UI visibility based on route properties
     if (this.currentRoute) {
       this.showNavBar = this.currentRoute.showNav !== false; // default to true if not specified
+    } else {
+      this.showNavBar = false;
     }
   }
 
@@ -43,7 +45,7 @@ class AppEnterElement extends routerMixin(LitElement) {
   render() {
     return html`
       <slot></slot>
-      ${this.currentRoute.showNav ? html` <nav-bar></nav-bar> ` : null}
+      ${this.currentRoute?.showNav ? html` <nav-bar></nav-bar> ` : null}
     `;
   }
 
