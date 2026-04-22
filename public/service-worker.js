@@ -1,5 +1,5 @@
 // Service Worker for ColorZap - Push Notifications Support
-const CACHE_NAME = "colorzap-cache-v1";
+const CACHE_NAME = "colorzap-cache-v2";
 const PUSH_NOTIFICATION_ICON = "/icons/icon.svg";
 
 // Install event - cache essential assets
@@ -8,8 +8,6 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll([
-        "/",
-        "/index.html",
         "/icons/icon.svg",
         "/icons/icon-192.png",
         "/icons/icon-512.png",
@@ -36,6 +34,28 @@ self.addEventListener("activate", (event) => {
 
 // Fetch event - serve from cache, fallback to network
 self.addEventListener("fetch", (event) => {
+  if (event.request.method !== "GET") {
+    return;
+  }
+
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put("/index.html", copy);
+          });
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match("/index.html");
+          return cached || Response.error();
+        }),
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((response) => {
       if (response) {

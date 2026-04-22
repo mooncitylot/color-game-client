@@ -1,38 +1,38 @@
-import webpack from 'webpack'
-import HtmlWebpackPlugin from 'html-webpack-plugin'
-import CopyWebpackPlugin from 'copy-webpack-plugin'
-import { CleanWebpackPlugin } from 'clean-webpack-plugin'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import * as dotenv from 'dotenv'
+import webpack from "webpack";
+import HtmlWebpackPlugin from "html-webpack-plugin";
+import CopyWebpackPlugin from "copy-webpack-plugin";
+import { CleanWebpackPlugin } from "clean-webpack-plugin";
+import path from "path";
+import { fileURLToPath } from "url";
+import * as dotenv from "dotenv";
 
-dotenv.config()
+dotenv.config();
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 function setEnvDefaults({ mode }) {
-  const DEV_PORT = 8000
+  const DEV_PORT = 8000;
   const defaults = {
     DEV_PORT,
-    API_URL: process.env.API_URL || 'http://localhost:9990',
+    API_URL: process.env.API_URL || "http://localhost:9990",
     APP_URL: process.env.APP_URL || `https://localhost:${DEV_PORT}`,
-    BUILD_MODE: mode || 'production',
-  }
+    BUILD_MODE: mode || "production",
+  };
 
   Object.keys(defaults).forEach((key) => {
     if (!process.env[key]) {
-      process.env[key] = defaults[key]
+      process.env[key] = defaults[key];
     }
-  })
+  });
 
-  return process.env
+  return process.env;
 }
 
 export default (env, { mode }) => {
-  setEnvDefaults({ mode })
+  setEnvDefaults({ mode });
 
-  let publicPath = mode === 'development' ? `https://localhost:${process.env.DEV_PORT}/` : `${process.env.APP_URL}/`
+  const publicPath = "/";
 
   console.log(`
     ***********************
@@ -42,46 +42,50 @@ export default (env, { mode }) => {
     publicPath: ${publicPath}
     
     ***********************
-  `)
+  `);
 
   return {
-    entry: path.resolve(__dirname, './src/app-enter.js'),
+    entry: path.resolve(__dirname, "./src/app-enter.js"),
     output: {
-      filename: '[name].[chunkhash].js',
-      path: path.resolve(__dirname, 'dist'),
+      filename: "[name].[chunkhash].js",
+      path: path.resolve(__dirname, "dist"),
       publicPath,
     },
     devServer: {
       https: true,
       static: {
-        directory: path.join(__dirname, 'public'),
+        directory: path.join(__dirname, "public"),
       },
       historyApiFallback: true,
       port: process.env.DEV_PORT,
-      allowedHosts: 'all',
+      allowedHosts: "all",
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
-        'Access-Control-Allow-Headers': 'X-Requested-With, content-type, Authorization',
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods":
+          "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "Access-Control-Allow-Headers":
+          "X-Requested-With, content-type, Authorization",
       },
     },
-    devtool: 'source-map',
+    devtool: "source-map",
     plugins: [
       new CleanWebpackPlugin({
-        cleanOnceBeforeBuildPatterns: [path.join(__dirname, 'dist/**/*')],
+        cleanOnceBeforeBuildPatterns: [path.join(__dirname, "dist/**/*")],
       }),
       new webpack.DefinePlugin({
-        'process.env.API_URL': JSON.stringify(process.env.API_URL),
-        'process.env.APP_URL': JSON.stringify(process.env.APP_URL),
-        'process.env.DEV_PORT': JSON.stringify(process.env.DEV_PORT),
-        'process.env.VAPID_PUBLIC_KEY': JSON.stringify(process.env.VAPID_PUBLIC_KEY || ''),
+        "process.env.API_URL": JSON.stringify(process.env.API_URL),
+        "process.env.APP_URL": JSON.stringify(process.env.APP_URL),
+        "process.env.DEV_PORT": JSON.stringify(process.env.DEV_PORT),
+        "process.env.VAPID_PUBLIC_KEY": JSON.stringify(
+          process.env.VAPID_PUBLIC_KEY || "",
+        ),
       }),
       new HtmlWebpackPlugin({
-        template: 'index.html',
+        template: "index.html",
       }),
       new CopyWebpackPlugin({
-        patterns: [{ from: 'public', to: '.', noErrorOnMissing: true }],
+        patterns: [{ from: "public", to: ".", noErrorOnMissing: true }],
       }),
     ],
-  }
-}
+  };
+};
